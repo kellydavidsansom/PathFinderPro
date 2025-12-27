@@ -1,15 +1,35 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-// Use /data for Railway persistent volume, local path for development
-const dbPath = process.env.NODE_ENV === 'production'
-  ? '/data/pathfinder.db'
-  : path.join(__dirname, 'data', 'pathfinder.db');
+// Determine database path
+// Use RAILWAY_VOLUME_MOUNT_PATH if volume is attached, otherwise use local data dir
+function getDbPath() {
+  const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
 
+  if (volumePath) {
+    // Railway volume is attached
+    const dbDir = volumePath;
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    return path.join(dbDir, 'pathfinder.db');
+  }
+
+  // Local development or no volume attached - use app directory
+  const localDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(localDir)) {
+    fs.mkdirSync(localDir, { recursive: true });
+  }
+  return path.join(localDir, 'pathfinder.db');
+}
+
+const dbPath = getDbPath();
 let db;
 
 function getDb() {
   if (!db) {
+    console.log('Opening database at:', dbPath);
     db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
   }
