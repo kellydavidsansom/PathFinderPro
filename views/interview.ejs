@@ -718,8 +718,11 @@
 
           <!-- Export Buttons -->
           <div class="export-buttons">
-            <button class="btn btn-primary" onclick="exportMISMO()">
-              <span>Export to MISMO 3.4 XML</span>
+            <button class="btn btn-primary" onclick="sendToArive()" id="sendToAriveBtn">
+              <span>Send to Arive</span>
+            </button>
+            <button class="btn" onclick="exportMISMO()">
+              <span>Export MISMO XML</span>
             </button>
             <button class="btn" onclick="copySummary()">
               <span>Copy Summary</span>
@@ -728,6 +731,7 @@
               <span>Print/PDF</span>
             </button>
           </div>
+          <p id="ariveStatus" class="text-muted" style="margin-top: 0.5rem;"></p>
         </div>
       </div>
     </section>

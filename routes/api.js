@@ -3,6 +3,215 @@ const router = express.Router();
 const db = require('../database');
 const { calculateBorrowerMetrics } = require('./borrowers');
 
+// ============================================
+// ZAPIER INTEGRATION ENDPOINTS
+// ============================================
+
+// API Key authentication middleware for Zapier
+function apiKeyAuth(req, res, next) {
+  const apiKey = req.headers['x-api-key'] || req.query.api_key;
+  const validKey = process.env.ZAPIER_API_KEY;
+
+  if (!validKey) {
+    // If no API key is configured, allow access (for initial setup)
+    console.warn('ZAPIER_API_KEY not configured - API endpoints are unprotected');
+    return next();
+  }
+
+  if (apiKey !== validKey) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+  next();
+}
+
+// Get all borrowers ready for export (for Zapier polling trigger)
+router.get('/zapier/borrowers', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+  const status = req.query.status || 'qualified';
+
+  const borrowers = database.prepare(`
+    SELECT * FROM borrowers
+    WHERE status = ?
+    ORDER BY updated_at DESC
+    LIMIT 100
+  `).all(status);
+
+  // Parse JSON and add calculations
+  const results = borrowers.map(b => {
+    b.employers = JSON.parse(b.employers || '[]');
+    b.other_income = JSON.parse(b.other_income || '[]');
+    b.co_employers = JSON.parse(b.co_employers || '[]');
+    b.co_other_income = JSON.parse(b.co_other_income || '[]');
+    b.assets = JSON.parse(b.assets || '[]');
+    b.debts = JSON.parse(b.debts || '[]');
+
+    const calculations = calculateBorrowerMetrics(b);
+    return { ...b, calculations };
+  });
+
+  res.json(results);
+});
+
+// Get single borrower with full data (for Zapier)
+router.get('/zapier/borrower/:id', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
+
+  if (!borrower) {
+    return res.status(404).json({ error: 'Borrower not found' });
+  }
+
+  borrower.employers = JSON.parse(borrower.employers || '[]');
+  borrower.other_income = JSON.parse(borrower.other_income || '[]');
+  borrower.co_employers = JSON.parse(borrower.co_employers || '[]');
+  borrower.co_other_income = JSON.parse(borrower.co_other_income || '[]');
+  borrower.assets = JSON.parse(borrower.assets || '[]');
+  borrower.debts = JSON.parse(borrower.debts || '[]');
+
+  const calculations = calculateBorrowerMetrics(borrower);
+
+  res.json({ borrower, calculations });
+});
+
+// Get MISMO XML for a borrower (for Zapier to send to Arive)
+router.get('/zapier/borrower/:id/mismo', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
+
+  if (!borrower) {
+    return res.status(404).json({ error: 'Borrower not found' });
+  }
+
+  borrower.employers = JSON.parse(borrower.employers || '[]');
+  borrower.other_income = JSON.parse(borrower.other_income || '[]');
+  borrower.assets = JSON.parse(borrower.assets || '[]');
+  borrower.debts = JSON.parse(borrower.debts || '[]');
+
+  const calculations = calculateBorrowerMetrics(borrower);
+  const xml = generateMISMOXML(borrower, calculations);
+
+  // Return as JSON with XML string (easier for Zapier to handle)
+  res.json({
+    borrower_id: borrower.id,
+    borrower_name: `${borrower.first_name} ${borrower.last_name}`,
+    mismo_xml: xml
+  });
+});
+
+// Mark borrower as exported (update status after Zapier sends to Arive)
+router.post('/zapier/borrower/:id/exported', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+
+  database.prepare(`
+    UPDATE borrowers
+    SET status = 'exported', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(req.params.id);
+
+  res.json({ success: true, message: 'Borrower marked as exported' });
+});
+
+// Webhook subscription management (store Zapier webhook URLs)
+router.post('/zapier/webhooks', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+  const { webhook_url, event_type } = req.body;
+
+  // Create webhooks table if not exists
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS zapier_webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      webhook_url TEXT NOT NULL,
+      event_type TEXT DEFAULT 'borrower.qualified',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const result = database.prepare(`
+    INSERT INTO zapier_webhooks (webhook_url, event_type)
+    VALUES (?, ?)
+  `).run(webhook_url, event_type || 'borrower.qualified');
+
+  res.json({ success: true, webhook_id: result.lastInsertRowid });
+});
+
+// Delete webhook subscription
+router.delete('/zapier/webhooks/:id', apiKeyAuth, (req, res) => {
+  const database = db.getDb();
+  database.prepare('DELETE FROM zapier_webhooks WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// Mark borrower as qualified and trigger webhook to Zapier
+router.post('/zapier/borrower/:id/qualify', apiKeyAuth, async (req, res) => {
+  const database = db.getDb();
+
+  // Update status
+  database.prepare(`
+    UPDATE borrowers
+    SET status = 'qualified', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(req.params.id);
+
+  // Get borrower data
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
+
+  if (borrower) {
+    borrower.employers = JSON.parse(borrower.employers || '[]');
+    borrower.other_income = JSON.parse(borrower.other_income || '[]');
+    borrower.assets = JSON.parse(borrower.assets || '[]');
+    borrower.debts = JSON.parse(borrower.debts || '[]');
+
+    const calculations = calculateBorrowerMetrics(borrower);
+
+    // Trigger webhooks
+    await triggerWebhooks('borrower.qualified', { borrower, calculations });
+  }
+
+  res.json({ success: true, message: 'Borrower qualified and webhooks triggered' });
+});
+
+// Helper function to trigger webhooks
+async function triggerWebhooks(eventType, data) {
+  const database = db.getDb();
+
+  try {
+    // Check if webhooks table exists
+    const tableExists = database.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='zapier_webhooks'
+    `).get();
+
+    if (!tableExists) return;
+
+    const webhooks = database.prepare(`
+      SELECT * FROM zapier_webhooks WHERE event_type = ?
+    `).all(eventType);
+
+    for (const webhook of webhooks) {
+      try {
+        const fetch = (await import('node-fetch')).default;
+        await fetch(webhook.webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: eventType,
+            timestamp: new Date().toISOString(),
+            data
+          })
+        });
+        console.log(`Webhook triggered: ${webhook.webhook_url}`);
+      } catch (err) {
+        console.error(`Webhook failed: ${webhook.webhook_url}`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('Error triggering webhooks:', err);
+  }
+}
+
+// ============================================
+// EXISTING ENDPOINTS
+// ============================================
+
 // Claude AI Analysis
 router.post('/analyze/:borrowerId', async (req, res) => {
   const database = db.getDb();

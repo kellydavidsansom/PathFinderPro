@@ -1045,6 +1045,40 @@ function exportMISMO() {
   window.location.href = `/api/export/mismo/${BORROWER_ID}`;
 }
 
+// Send to Arive via Zapier integration
+async function sendToArive() {
+  const btn = document.getElementById('sendToAriveBtn');
+  const status = document.getElementById('ariveStatus');
+
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Sending...';
+  status.textContent = '';
+
+  try {
+    const response = await fetch(`/api/zapier/borrower/${BORROWER_ID}/qualify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      btn.querySelector('span').textContent = 'Sent to Arive';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-success');
+      status.textContent = 'Borrower marked as qualified. Zapier will sync to Arive.';
+      status.style.color = '#10b981';
+    } else {
+      throw new Error(result.error || 'Failed to send');
+    }
+  } catch (error) {
+    btn.querySelector('span').textContent = 'Send to Arive';
+    btn.disabled = false;
+    status.textContent = 'Error: ' + error.message;
+    status.style.color = '#ef4444';
+  }
+}
+
 function copySummary() {
   const summary = generateSummaryText();
   navigator.clipboard.writeText(summary).then(() => {
