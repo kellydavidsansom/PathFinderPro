@@ -141,7 +141,36 @@ router.delete('/zapier/webhooks/:id', apiKeyAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// Mark borrower as qualified and trigger webhook to Zapier
+// Internal endpoint for "Send to Arive" button (no API key required)
+router.post('/borrower/:id/send-to-arive', async (req, res) => {
+  const database = db.getDb();
+
+  // Update status
+  database.prepare(`
+    UPDATE borrowers
+    SET status = 'qualified', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(req.params.id);
+
+  // Get borrower data
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
+
+  if (borrower) {
+    borrower.employers = JSON.parse(borrower.employers || '[]');
+    borrower.other_income = JSON.parse(borrower.other_income || '[]');
+    borrower.assets = JSON.parse(borrower.assets || '[]');
+    borrower.debts = JSON.parse(borrower.debts || '[]');
+
+    const calculations = calculateBorrowerMetrics(borrower);
+
+    // Trigger webhooks
+    await triggerWebhooks('borrower.qualified', { borrower, calculations });
+  }
+
+  res.json({ success: true, message: 'Borrower marked as qualified' });
+});
+
+// Mark borrower as qualified via Zapier (requires API key)
 router.post('/zapier/borrower/:id/qualify', apiKeyAuth, async (req, res) => {
   const database = db.getDb();
 

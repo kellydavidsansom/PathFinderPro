@@ -1055,7 +1055,7 @@ async function sendToArive() {
   status.textContent = '';
 
   try {
-    const response = await fetch(`/api/zapier/borrower/${BORROWER_ID}/qualify`, {
+    const response = await fetch(`/api/borrower/${BORROWER_ID}/send-to-arive`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
