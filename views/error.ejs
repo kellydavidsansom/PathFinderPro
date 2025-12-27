@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error - PathFinder Pro</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <h1>PathFinder Pro</h1>
+        <span class="tagline">ClearPath Utah Mortgage</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="error-page">
+        <h2>Oops! Something went wrong</h2>
+        <p><%= message %></p>
+        <% if (error && error.stack) { %>
+          <pre><%= error.stack %></pre>
+        <% } %>
+        <a href="/" class="btn btn-primary">Return Home</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

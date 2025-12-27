@@ -1,0 +1,27 @@
+<div class="other-income-block" data-index="<%= index %>" data-prefix="<%= prefix %>">
+  <div class="block-header">
+    <h4>Income Source <%= index + 1 %></h4>
+    <button class="btn btn-sm btn-danger" onclick="removeOtherIncome('<%= prefix %>', <%= index %>)">Remove</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Type</label>
+      <select class="income-field" data-field="type">
+        <option value="Self-Employment/Side Hustle" <%= inc.type === 'Self-Employment/Side Hustle' ? 'selected' : '' %>>Self-Employment/Side Hustle</option>
+        <option value="Rental Income" <%= inc.type === 'Rental Income' ? 'selected' : '' %>>Rental Income</option>
+        <option value="Retirement/Pension" <%= inc.type === 'Retirement/Pension' ? 'selected' : '' %>>Retirement/Pension</option>
+        <option value="Social Security" <%= inc.type === 'Social Security' ? 'selected' : '' %>>Social Security</option>
+        <option value="Child Support/Alimony" <%= inc.type === 'Child Support/Alimony' ? 'selected' : '' %>>Child Support/Alimony</option>
+        <option value="Other" <%= inc.type === 'Other' ? 'selected' : '' %>>Other</option>
+      </select>
+    </div>
+    <div class="form-group business-name-group <%= inc.type === 'Self-Employment/Side Hustle' ? '' : 'hidden' %>">
+      <label>Business Name</label>
+      <input type="text" class="income-field" data-field="business_name" value="<%= inc.business_name || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Monthly Amount</label>
+      <input type="number" class="income-field" data-field="monthly_amount" value="<%= inc.monthly_amount || '' %>" placeholder="$0">
+    </div>
+  </div>
+</div>

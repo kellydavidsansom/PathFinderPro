@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - PathFinder Pro</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <a href="/" class="logo-link">
+          <h1>PathFinder Pro</h1>
+          <span class="tagline">ClearPath Utah Mortgage</span>
+        </a>
+      </div>
+      <div class="borrower-name" id="headerBorrowerName">
+        <%= borrower.first_name || 'New' %> <%= borrower.last_name || 'Borrower' %>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Knowledge Repository">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Tab Navigation -->
+  <nav class="tab-nav">
+    <button class="tab active" data-tab="borrower">Borrower Info</button>
+    <button class="tab" data-tab="income">Income</button>
+    <button class="tab" data-tab="assets">Assets</button>
+    <button class="tab" data-tab="debts">Debts</button>
+    <button class="tab" data-tab="property">Property</button>
+    <button class="tab" data-tab="credit">Credit</button>
+    <button class="tab" data-tab="summary">Summary</button>
+  </nav>
+
+  <main class="interview-main">
+    <!-- BORROWER INFO TAB -->
+    <section id="borrower-tab" class="tab-content active">
+      <div class="form-section">
+        <h3>Primary Borrower</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" name="first_name" value="<%= borrower.first_name || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" name="last_name" value="<%= borrower.last_name || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" name="phone" value="<%= borrower.phone || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value="<%= borrower.email || '' %>" data-autosave>
+          </div>
+        </div>
+
+        <h4>Current Address</h4>
+        <div class="form-grid">
+          <div class="form-group col-span-2">
+            <label>Street Address</label>
+            <input type="text" name="street_address" value="<%= borrower.street_address || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" name="city" value="<%= borrower.city || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" name="state" value="<%= borrower.state || '' %>" maxlength="2" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>ZIP</label>
+            <input type="text" name="zip" value="<%= borrower.zip || '' %>" maxlength="10" data-autosave>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" name="date_of_birth" value="<%= borrower.date_of_birth || '' %>" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>SSN</label>
+            <input type="password" name="ssn" value="<%= borrower.ssn || '' %>" placeholder="XXX-XX-XXXX" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>Marital Status</label>
+            <select name="marital_status" data-autosave>
+              <option value="">Select...</option>
+              <option value="Unmarried" <%= borrower.marital_status === 'Unmarried' ? 'selected' : '' %>>Unmarried</option>
+              <option value="Married" <%= borrower.marital_status === 'Married' ? 'selected' : '' %>>Married</option>
+              <option value="Separated" <%= borrower.marital_status === 'Separated' ? 'selected' : '' %>>Separated</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Dependents</label>
+            <input type="number" name="dependents" value="<%= borrower.dependents || 0 %>" min="0" data-autosave>
+          </div>
+          <div class="form-group">
+            <label>Citizenship Status</label>
+            <select name="citizenship_status" data-autosave>
+              <option value="">Select...</option>
+              <option value="US Citizen" <%= borrower.citizenship_status === 'US Citizen' ? 'selected' : '' %>>US Citizen</option>
+              <option value="Permanent Resident" <%= borrower.citizenship_status === 'Permanent Resident' ? 'selected' : '' %>>Permanent Resident</option>
+              <option value="Non-Permanent Resident" <%= borrower.citizenship_status === 'Non-Permanent Resident' ? 'selected' : '' %>>Non-Permanent Resident</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>First-Time Homebuyer?</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn <%= borrower.first_time_homebuyer ? 'active' : '' %>" data-field="first_time_homebuyer" data-value="1">Yes</button>
+              <button type="button" class="toggle-btn <%= !borrower.first_time_homebuyer ? 'active' : '' %>" data-field="first_time_homebuyer" data-value="0">No</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Co-Borrower</h3>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn <%= borrower.has_coborrower ? 'active' : '' %>" data-field="has_coborrower" data-value="1" id="coBorrowerYes">Yes</button>
+            <button type="button" class="toggle-btn <%= !borrower.has_coborrower ? 'active' : '' %>" data-field="has_coborrower" data-value="0" id="coBorrowerNo">No</button>
+          </div>
+        </div>
+
+        <div id="coBorrowerFields" class="<%= borrower.has_coborrower ? '' : 'hidden' %>">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" name="co_first_name" value="<%= borrower.co_first_name || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" name="co_last_name" value="<%= borrower.co_last_name || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" name="co_phone" value="<%= borrower.co_phone || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="co_email" value="<%= borrower.co_email || '' %>" data-autosave>
+            </div>
+          </div>
+
+          <h4>Current Address</h4>
+          <div class="form-grid">
+            <div class="form-group col-span-2">
+              <label>Street Address</label>
+              <input type="text" name="co_street_address" value="<%= borrower.co_street_address || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" name="co_city" value="<%= borrower.co_city || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>State</label>
+              <input type="text" name="co_state" value="<%= borrower.co_state || '' %>" maxlength="2" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>ZIP</label>
+              <input type="text" name="co_zip" value="<%= borrower.co_zip || '' %>" maxlength="10" data-autosave>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <input type="date" name="co_date_of_birth" value="<%= borrower.co_date_of_birth || '' %>" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>SSN</label>
+              <input type="password" name="co_ssn" value="<%= borrower.co_ssn || '' %>" placeholder="XXX-XX-XXXX" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Marital Status</label>
+              <select name="co_marital_status" data-autosave>
+                <option value="">Select...</option>
+                <option value="Unmarried" <%= borrower.co_marital_status === 'Unmarried' ? 'selected' : '' %>>Unmarried</option>
+                <option value="Married" <%= borrower.co_marital_status === 'Married' ? 'selected' : '' %>>Married</option>
+                <option value="Separated" <%= borrower.co_marital_status === 'Separated' ? 'selected' : '' %>>Separated</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Dependents</label>
+              <input type="number" name="co_dependents" value="<%= borrower.co_dependents || 0 %>" min="0" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Citizenship Status</label>
+              <select name="co_citizenship_status" data-autosave>
+                <option value="">Select...</option>
+                <option value="US Citizen" <%= borrower.co_citizenship_status === 'US Citizen' ? 'selected' : '' %>>US Citizen</option>
+                <option value="Permanent Resident" <%= borrower.co_citizenship_status === 'Permanent Resident' ? 'selected' : '' %>>Permanent Resident</option>
+                <option value="Non-Permanent Resident" <%= borrower.co_citizenship_status === 'Non-Permanent Resident' ? 'selected' : '' %>>Non-Permanent Resident</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INCOME TAB -->
+    <section id="income-tab" class="tab-content">
+      <div class="tab-layout">
+        <div class="tab-main">
+          <div class="form-section">
+            <div class="section-header">
+              <h3>Employment - Primary Borrower</h3>
+              <button class="btn btn-sm" onclick="addEmployer('primary')">+ Add Employer</button>
+            </div>
+            <div id="primaryEmployers" class="dynamic-list">
+              <% borrower.employers.forEach((emp, i) => { %>
+              <%- include('partials/employer-block', { emp, index: i, prefix: 'primary' }) %>
+              <% }) %>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="section-header">
+              <h3>Other Income - Primary Borrower</h3>
+              <button class="btn btn-sm" onclick="addOtherIncome('primary')">+ Add Income Source</button>
+            </div>
+            <div id="primaryOtherIncome" class="dynamic-list">
+              <% borrower.other_income.forEach((inc, i) => { %>
+              <%- include('partials/other-income-block', { inc, index: i, prefix: 'primary' }) %>
+              <% }) %>
+            </div>
+          </div>
+
+          <div id="coIncomeSection" class="<%= borrower.has_coborrower ? '' : 'hidden' %>">
+            <div class="form-section">
+              <div class="section-header">
+                <h3>Employment - Co-Borrower</h3>
+                <button class="btn btn-sm" onclick="addEmployer('co')">+ Add Employer</button>
+              </div>
+              <div id="coEmployers" class="dynamic-list">
+                <% borrower.co_employers.forEach((emp, i) => { %>
+                <%- include('partials/employer-block', { emp, index: i, prefix: 'co' }) %>
+                <% }) %>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-header">
+                <h3>Other Income - Co-Borrower</h3>
+                <button class="btn btn-sm" onclick="addOtherIncome('co')">+ Add Income Source</button>
+              </div>
+              <div id="coOtherIncome" class="dynamic-list">
+                <% borrower.co_other_income.forEach((inc, i) => { %>
+                <%- include('partials/other-income-block', { inc, index: i, prefix: 'co' }) %>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="calculation-sidebar">
+          <h4>Income Summary</h4>
+          <div class="calc-item">
+            <span>Primary Employment</span>
+            <span id="calcPrimaryEmployment">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>Primary Other Income</span>
+            <span id="calcPrimaryOther">$0</span>
+          </div>
+          <div class="calc-item" id="calcCoEmploymentRow" style="display: none;">
+            <span>Co-Borrower Employment</span>
+            <span id="calcCoEmployment">$0</span>
+          </div>
+          <div class="calc-item" id="calcCoOtherRow" style="display: none;">
+            <span>Co-Borrower Other</span>
+            <span id="calcCoOther">$0</span>
+          </div>
+          <hr>
+          <div class="calc-item calc-total">
+            <span>Total Monthly Gross</span>
+            <span id="calcTotalMonthly">$0</span>
+          </div>
+          <div class="calc-item calc-total">
+            <span>Annual Gross</span>
+            <span id="calcAnnualGross">$0</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ASSETS TAB -->
+    <section id="assets-tab" class="tab-content">
+      <div class="tab-layout">
+        <div class="tab-main">
+          <div class="form-section">
+            <div class="section-header">
+              <h3>Assets</h3>
+              <button class="btn btn-sm" onclick="addAsset()">+ Add Account</button>
+            </div>
+            <table class="data-table" id="assetsTable">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Institution / Source</th>
+                  <th>Balance</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% borrower.assets.forEach((asset, i) => { %>
+                <tr data-index="<%= i %>">
+                  <td>
+                    <select class="asset-type" data-index="<%= i %>">
+                      <option value="Checking" <%= asset.type === 'Checking' ? 'selected' : '' %>>Checking</option>
+                      <option value="Savings" <%= asset.type === 'Savings' ? 'selected' : '' %>>Savings</option>
+                      <option value="401(k)/IRA" <%= asset.type === '401(k)/IRA' ? 'selected' : '' %>>401(k)/IRA</option>
+                      <option value="Stocks/Investments" <%= asset.type === 'Stocks/Investments' ? 'selected' : '' %>>Stocks/Investments</option>
+                      <option value="Gift Funds" <%= asset.type === 'Gift Funds' ? 'selected' : '' %>>Gift Funds</option>
+                      <option value="Other" <%= asset.type === 'Other' ? 'selected' : '' %>>Other</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="asset-institution" data-index="<%= i %>" value="<%= asset.institution || '' %>" placeholder="<%= asset.type === 'Gift Funds' ? 'Gift Source' : 'Institution' %>"></td>
+                  <td><input type="number" class="asset-balance" data-index="<%= i %>" value="<%= asset.balance || '' %>" placeholder="$0"></td>
+                  <td><button class="btn btn-sm btn-danger" onclick="removeAsset(<%= i %>)">Remove</button></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="calculation-sidebar">
+          <h4>Asset Summary</h4>
+          <div class="calc-item calc-total">
+            <span>Total Assets</span>
+            <span id="calcTotalAssets">$0</span>
+          </div>
+          <div class="calc-item calc-total">
+            <span>Liquid Assets</span>
+            <span id="calcLiquidAssets">$0</span>
+          </div>
+          <p class="calc-note">Liquid excludes retirement accounts</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- DEBTS TAB -->
+    <section id="debts-tab" class="tab-content">
+      <div class="tab-layout">
+        <div class="tab-main">
+          <div class="form-section">
+            <div class="section-header">
+              <h3>Monthly Debts</h3>
+              <button class="btn btn-sm" onclick="addDebt()">+ Add Debt</button>
+            </div>
+            <table class="data-table" id="debtsTable">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Creditor</th>
+                  <th>Balance</th>
+                  <th>Monthly Payment</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% borrower.debts.forEach((debt, i) => { %>
+                <tr data-index="<%= i %>">
+                  <td>
+                    <select class="debt-type" data-index="<%= i %>">
+                      <option value="Current Rent/Mortgage" <%= debt.type === 'Current Rent/Mortgage' ? 'selected' : '' %>>Current Rent/Mortgage</option>
+                      <option value="Auto Loan" <%= debt.type === 'Auto Loan' ? 'selected' : '' %>>Auto Loan</option>
+                      <option value="Student Loans" <%= debt.type === 'Student Loans' ? 'selected' : '' %>>Student Loans</option>
+                      <option value="Credit Card" <%= debt.type === 'Credit Card' ? 'selected' : '' %>>Credit Card</option>
+                      <option value="Personal Loan" <%= debt.type === 'Personal Loan' ? 'selected' : '' %>>Personal Loan</option>
+                      <option value="Child Support/Alimony" <%= debt.type === 'Child Support/Alimony' ? 'selected' : '' %>>Child Support/Alimony</option>
+                      <option value="Other" <%= debt.type === 'Other' ? 'selected' : '' %>>Other</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="debt-creditor" data-index="<%= i %>" value="<%= debt.creditor || '' %>"></td>
+                  <td><input type="number" class="debt-balance" data-index="<%= i %>" value="<%= debt.balance || '' %>" placeholder="$0"></td>
+                  <td><input type="number" class="debt-payment" data-index="<%= i %>" value="<%= debt.monthly_payment || '' %>" placeholder="$0"></td>
+                  <td><button class="btn btn-sm btn-danger" onclick="removeDebt(<%= i %>)">Remove</button></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="calculation-sidebar">
+          <h4>Debt Summary</h4>
+          <div class="calc-item calc-total">
+            <span>Total Monthly Debts</span>
+            <span id="calcTotalDebts">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>Current DTI</span>
+            <span id="calcCurrentDTI">0%</span>
+          </div>
+          <p class="calc-note">DTI based on current debts only (before new housing payment)</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- PROPERTY TAB -->
+    <section id="property-tab" class="tab-content">
+      <div class="tab-layout">
+        <div class="tab-main">
+          <div class="form-section">
+            <h3>Subject Property</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Purchase Price</label>
+                <input type="number" name="purchase_price" id="purchasePrice" value="<%= borrower.purchase_price || '' %>" placeholder="$0" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>Down Payment ($)</label>
+                <input type="number" name="down_payment_amount" id="downPaymentAmount" value="<%= borrower.down_payment_amount || '' %>" placeholder="$0" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>Down Payment (%)</label>
+                <input type="number" name="down_payment_percent" id="downPaymentPercent" value="<%= borrower.down_payment_percent || '' %>" placeholder="%" step="0.1" data-autosave>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Property Type</label>
+                <select name="property_type" data-autosave>
+                  <option value="">Select...</option>
+                  <option value="Single Family" <%= borrower.property_type === 'Single Family' ? 'selected' : '' %>>Single Family</option>
+                  <option value="Condo" <%= borrower.property_type === 'Condo' ? 'selected' : '' %>>Condo</option>
+                  <option value="Townhome" <%= borrower.property_type === 'Townhome' ? 'selected' : '' %>>Townhome</option>
+                  <option value="2-4 Unit" <%= borrower.property_type === '2-4 Unit' ? 'selected' : '' %>>2-4 Unit</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Occupancy</label>
+                <select name="occupancy" data-autosave>
+                  <option value="">Select...</option>
+                  <option value="Primary Residence" <%= borrower.occupancy === 'Primary Residence' ? 'selected' : '' %>>Primary Residence</option>
+                  <option value="Second Home" <%= borrower.occupancy === 'Second Home' ? 'selected' : '' %>>Second Home</option>
+                  <option value="Investment" <%= borrower.occupancy === 'Investment' ? 'selected' : '' %>>Investment</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>State</label>
+                <input type="text" name="property_state" value="<%= borrower.property_state || 'Utah' %>" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>County</label>
+                <select name="property_county" data-autosave>
+                  <option value="">Select...</option>
+                  <option value="Salt Lake" <%= borrower.property_county === 'Salt Lake' ? 'selected' : '' %>>Salt Lake</option>
+                  <option value="Utah" <%= borrower.property_county === 'Utah' ? 'selected' : '' %>>Utah</option>
+                  <option value="Davis" <%= borrower.property_county === 'Davis' ? 'selected' : '' %>>Davis</option>
+                  <option value="Weber" <%= borrower.property_county === 'Weber' ? 'selected' : '' %>>Weber</option>
+                  <option value="Cache" <%= borrower.property_county === 'Cache' ? 'selected' : '' %>>Cache</option>
+                  <option value="Washington" <%= borrower.property_county === 'Washington' ? 'selected' : '' %>>Washington</option>
+                  <option value="Box Elder" <%= borrower.property_county === 'Box Elder' ? 'selected' : '' %>>Box Elder</option>
+                  <option value="Tooele" <%= borrower.property_county === 'Tooele' ? 'selected' : '' %>>Tooele</option>
+                  <option value="Summit" <%= borrower.property_county === 'Summit' ? 'selected' : '' %>>Summit</option>
+                  <option value="Iron" <%= borrower.property_county === 'Iron' ? 'selected' : '' %>>Iron</option>
+                  <option value="Sanpete" <%= borrower.property_county === 'Sanpete' ? 'selected' : '' %>>Sanpete</option>
+                  <option value="Sevier" <%= borrower.property_county === 'Sevier' ? 'selected' : '' %>>Sevier</option>
+                  <option value="Carbon" <%= borrower.property_county === 'Carbon' ? 'selected' : '' %>>Carbon</option>
+                  <option value="Uintah" <%= borrower.property_county === 'Uintah' ? 'selected' : '' %>>Uintah</option>
+                  <option value="Duchesne" <%= borrower.property_county === 'Duchesne' ? 'selected' : '' %>>Duchesne</option>
+                  <option value="Wasatch" <%= borrower.property_county === 'Wasatch' ? 'selected' : '' %>>Wasatch</option>
+                  <option value="Morgan" <%= borrower.property_county === 'Morgan' ? 'selected' : '' %>>Morgan</option>
+                  <option value="Juab" <%= borrower.property_county === 'Juab' ? 'selected' : '' %>>Juab</option>
+                  <option value="Millard" <%= borrower.property_county === 'Millard' ? 'selected' : '' %>>Millard</option>
+                  <option value="Beaver" <%= borrower.property_county === 'Beaver' ? 'selected' : '' %>>Beaver</option>
+                  <option value="Grand" <%= borrower.property_county === 'Grand' ? 'selected' : '' %>>Grand</option>
+                  <option value="Emery" <%= borrower.property_county === 'Emery' ? 'selected' : '' %>>Emery</option>
+                  <option value="San Juan" <%= borrower.property_county === 'San Juan' ? 'selected' : '' %>>San Juan</option>
+                  <option value="Kane" <%= borrower.property_county === 'Kane' ? 'selected' : '' %>>Kane</option>
+                  <option value="Garfield" <%= borrower.property_county === 'Garfield' ? 'selected' : '' %>>Garfield</option>
+                  <option value="Wayne" <%= borrower.property_county === 'Wayne' ? 'selected' : '' %>>Wayne</option>
+                  <option value="Piute" <%= borrower.property_county === 'Piute' ? 'selected' : '' %>>Piute</option>
+                  <option value="Rich" <%= borrower.property_county === 'Rich' ? 'selected' : '' %>>Rich</option>
+                  <option value="Daggett" <%= borrower.property_county === 'Daggett' ? 'selected' : '' %>>Daggett</option>
+                </select>
+              </div>
+            </div>
+
+            <h4>Monthly Costs</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Est. Property Taxes (Annual)</label>
+                <input type="number" name="property_taxes_annual" value="<%= borrower.property_taxes_annual || '' %>" placeholder="$0" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>Est. HOA (Monthly)</label>
+                <input type="number" name="hoa_monthly" value="<%= borrower.hoa_monthly || '' %>" placeholder="$0" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>Est. Homeowners Insurance (Annual)</label>
+                <input type="number" name="insurance_annual" value="<%= borrower.insurance_annual || '' %>" placeholder="$0" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>Interest Rate (%)</label>
+                <input type="number" name="interest_rate" value="<%= borrower.interest_rate || 7.0 %>" step="0.125" data-autosave>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="calculation-sidebar">
+          <h4>Payment Breakdown</h4>
+          <div class="calc-item">
+            <span>Loan Amount</span>
+            <span id="calcLoanAmount">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>LTV</span>
+            <span id="calcLTV">0%</span>
+          </div>
+          <hr>
+          <div class="calc-item">
+            <span>Principal & Interest</span>
+            <span id="calcPI">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>Taxes</span>
+            <span id="calcTaxes">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>Insurance</span>
+            <span id="calcInsurance">$0</span>
+          </div>
+          <div class="calc-item">
+            <span>HOA</span>
+            <span id="calcHOA">$0</span>
+          </div>
+          <hr>
+          <div class="calc-item calc-total">
+            <span>Est. Monthly PITI</span>
+            <span id="calcPITI">$0</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- CREDIT TAB -->
+    <section id="credit-tab" class="tab-content">
+      <div class="form-section">
+        <h3>Credit Profile</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Credit Score</label>
+            <input type="number" name="credit_score" value="<%= borrower.credit_score || '' %>" min="300" max="850" placeholder="300-850" data-autosave>
+          </div>
+          <div class="form-group" id="coCreditScoreGroup" class="<%= borrower.has_coborrower ? '' : 'hidden' %>">
+            <label>Co-Borrower Credit Score</label>
+            <input type="number" name="co_credit_score" value="<%= borrower.co_credit_score || '' %>" min="300" max="850" placeholder="300-850" data-autosave>
+          </div>
+        </div>
+
+        <h4>Credit History</h4>
+        <div class="credit-questions">
+          <div class="credit-question">
+            <span>Late payments in last 12 months?</span>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn <%= borrower.late_payments_12 ? 'active' : '' %>" data-field="late_payments_12" data-value="1">Yes</button>
+              <button type="button" class="toggle-btn <%= !borrower.late_payments_12 ? 'active' : '' %>" data-field="late_payments_12" data-value="0">No</button>
+            </div>
+            <span class="credit-flag" id="flag12mo"></span>
+          </div>
+
+          <div class="credit-question">
+            <span>Late payments in last 24 months?</span>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn <%= borrower.late_payments_24 ? 'active' : '' %>" data-field="late_payments_24" data-value="1">Yes</button>
+              <button type="button" class="toggle-btn <%= !borrower.late_payments_24 ? 'active' : '' %>" data-field="late_payments_24" data-value="0">No</button>
+            </div>
+            <span class="credit-flag" id="flag24mo"></span>
+          </div>
+
+          <div class="credit-question">
+            <span>Bankruptcy history?</span>
+            <select name="bankruptcy" data-autosave>
+              <option value="Never" <%= borrower.bankruptcy === 'Never' ? 'selected' : '' %>>Never</option>
+              <option value="2+ years ago" <%= borrower.bankruptcy === '2+ years ago' ? 'selected' : '' %>>2+ years ago</option>
+              <option value="Within 2 years" <%= borrower.bankruptcy === 'Within 2 years' ? 'selected' : '' %>>Within 2 years</option>
+            </select>
+            <span class="credit-flag" id="flagBankruptcy"></span>
+          </div>
+
+          <div class="credit-question">
+            <span>Foreclosure history?</span>
+            <select name="foreclosure" data-autosave>
+              <option value="Never" <%= borrower.foreclosure === 'Never' ? 'selected' : '' %>>Never</option>
+              <option value="3+ years ago" <%= borrower.foreclosure === '3+ years ago' ? 'selected' : '' %>>3+ years ago</option>
+              <option value="Within 3 years" <%= borrower.foreclosure === 'Within 3 years' ? 'selected' : '' %>>Within 3 years</option>
+            </select>
+            <span class="credit-flag" id="flagForeclosure"></span>
+          </div>
+
+          <div class="credit-question">
+            <span>Outstanding collections/judgments?</span>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn <%= borrower.collections ? 'active' : '' %>" data-field="collections" data-value="1">Yes</button>
+              <button type="button" class="toggle-btn <%= !borrower.collections ? 'active' : '' %>" data-field="collections" data-value="0">No</button>
+            </div>
+            <span class="credit-flag" id="flagCollections"></span>
+          </div>
+
+          <div class="form-group" id="collectionsAmountGroup" class="<%= borrower.collections ? '' : 'hidden' %>">
+            <label>Collections Amount</label>
+            <input type="number" name="collections_amount" value="<%= borrower.collections_amount || '' %>" placeholder="$0" data-autosave>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY TAB -->
+    <section id="summary-tab" class="tab-content">
+      <div class="summary-layout">
+        <div class="summary-main">
+          <!-- Borrower Snapshot -->
+          <div class="summary-card">
+            <h3>Borrower Snapshot</h3>
+            <div class="snapshot-grid">
+              <div>
+                <strong id="summaryName"><%= borrower.first_name || '' %> <%= borrower.last_name || '' %></strong>
+                <span id="summaryCoBorrower"><%= borrower.has_coborrower ? `& ${borrower.co_first_name || ''} ${borrower.co_last_name || ''}` : '' %></span>
+              </div>
+              <div>
+                <span id="summaryPhone"><%= borrower.phone || '' %></span><br>
+                <span id="summaryEmail"><%= borrower.email || '' %></span>
+              </div>
+              <div>
+                <strong>Property Goal:</strong><br>
+                <span id="summaryPropertyGoal">
+                  <%= borrower.property_type || 'Not specified' %> in <%= borrower.property_county || '?' %> County
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- The Numbers -->
+          <div class="summary-card">
+            <h3>The Numbers</h3>
+            <table class="summary-table">
+              <tr><td>Gross Monthly Income</td><td id="summaryMonthlyIncome">$0</td></tr>
+              <tr><td>Total Monthly Debts</td><td id="summaryMonthlyDebts">$0</td></tr>
+              <tr><td>Proposed Housing Payment</td><td id="summaryPITI">$0</td></tr>
+              <tr class="highlight"><td>Front-End DTI</td><td id="summaryFrontDTI">0%</td></tr>
+              <tr class="highlight"><td>Back-End DTI</td><td id="summaryBackDTI">0%</td></tr>
+              <tr><td>Loan Amount</td><td id="summaryLoanAmount">$0</td></tr>
+              <tr><td>LTV</td><td id="summaryLTV">0%</td></tr>
+              <tr><td>Total Assets</td><td id="summaryAssets">$0</td></tr>
+              <tr><td>Est. Cash to Close</td><td id="summaryCashToClose">$0</td></tr>
+              <tr><td>Credit Score</td><td id="summaryCreditScore">-</td></tr>
+            </table>
+          </div>
+
+          <!-- Max Purchase Power -->
+          <div class="summary-card">
+            <h3>Max Purchase Power</h3>
+            <div class="purchase-power-grid">
+              <div class="power-item">
+                <span class="power-label">At 43% DTI</span>
+                <span class="power-value" id="maxPurchase43">$0</span>
+              </div>
+              <div class="power-item">
+                <span class="power-label">At 45% DTI</span>
+                <span class="power-value" id="maxPurchase45">$0</span>
+              </div>
+              <div class="power-item">
+                <span class="power-label">At 50% DTI</span>
+                <span class="power-value" id="maxPurchase50">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Analysis -->
+          <div class="summary-card">
+            <div class="section-header">
+              <h3>AI Analysis Report</h3>
+              <button class="btn" onclick="generateAnalysis()">Generate Analysis</button>
+            </div>
+            <div id="aiAnalysis" class="ai-analysis">
+              <% if (borrower.ai_analysis) { %>
+                <%- borrower.ai_analysis.replace(/\n/g, '<br>') %>
+              <% } else { %>
+                <p class="text-muted">Click "Generate Analysis" to get AI-powered insights on this borrower's qualification profile.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Chat with Claude -->
+          <div class="summary-card">
+            <h3>Chat with Claude</h3>
+            <div id="chatHistory" class="chat-history">
+              <% chatHistory.forEach(msg => { %>
+              <div class="chat-message chat-<%= msg.role %>">
+                <strong><%= msg.role === 'user' ? 'You' : 'Claude' %>:</strong>
+                <p><%= msg.content %></p>
+              </div>
+              <% }) %>
+            </div>
+            <div class="chat-input">
+              <input type="text" id="chatInput" placeholder="Ask about this borrower's scenario...">
+              <button class="btn btn-primary" onclick="sendChat()">Send</button>
+            </div>
+          </div>
+
+          <!-- Export Buttons -->
+          <div class="export-buttons">
+            <button class="btn btn-primary" onclick="exportMISMO()">
+              <span>Export to MISMO 3.4 XML</span>
+            </button>
+            <button class="btn" onclick="copySummary()">
+              <span>Copy Summary</span>
+            </button>
+            <button class="btn" onclick="window.print()">
+              <span>Print/PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Knowledge Modal (same as index) -->
+  <div id="knowledgeModal" class="modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2>Knowledge Repository</h2>
+        <button class="modal-close" onclick="closeKnowledgeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Same content as index.ejs knowledge modal -->
+        <div class="knowledge-tabs">
+          <button class="knowledge-tab active" data-tab="urls">Website Scraping</button>
+          <button class="knowledge-tab" data-tab="emails">Email Receiver</button>
+          <button class="knowledge-tab" data-tab="pdfs">PDF Uploads</button>
+        </div>
+        <div id="urls-content" class="knowledge-content active">
+          <div class="add-form">
+            <input type="text" id="urlName" placeholder="Name/Label">
+            <input type="url" id="urlInput" placeholder="https://...">
+            <button class="btn btn-primary" onclick="addUrl()">Add URL</button>
+          </div>
+          <table class="data-table" id="urlsTable"><thead><tr><th>Name</th><th>URL</th><th>Last Scraped</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="emails-content" class="knowledge-content">
+          <div class="info-box"><strong>Email:</strong> pathfinder@mg.clearpathutah.com</div>
+          <table class="data-table" id="emailsTable"><thead><tr><th>From</th><th>Subject</th><th>Received</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="pdfs-content" class="knowledge-content">
+          <div class="upload-area" id="pdfDropZone"><p>Drag & drop PDF files here</p><input type="file" id="pdfInput" accept=".pdf" hidden></div>
+          <table class="data-table" id="pdfsTable"><thead><tr><th>Filename</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BORROWER_ID = <%= borrower.id %>;
+  </script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

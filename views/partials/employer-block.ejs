@@ -1,0 +1,84 @@
+<div class="employer-block" data-index="<%= index %>" data-prefix="<%= prefix %>">
+  <div class="block-header">
+    <h4>Employer <%= index + 1 %></h4>
+    <button class="btn btn-sm btn-danger" onclick="removeEmployer('<%= prefix %>', <%= index %>)">Remove</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Employer Name</label>
+      <input type="text" class="emp-field" data-field="employer_name" value="<%= emp.employer_name || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Position/Title</label>
+      <input type="text" class="emp-field" data-field="position" value="<%= emp.position || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Start Date</label>
+      <input type="date" class="emp-field" data-field="start_date" value="<%= emp.start_date || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Years in Line of Work</label>
+      <input type="number" class="emp-field" data-field="years_in_line" value="<%= emp.years_in_line || '' %>" step="0.5">
+    </div>
+    <div class="form-group">
+      <label>Employment Type</label>
+      <select class="emp-field" data-field="employment_type">
+        <option value="W-2" <%= emp.employment_type === 'W-2' ? 'selected' : '' %>>W-2</option>
+        <option value="Self-Employed" <%= emp.employment_type === 'Self-Employed' ? 'selected' : '' %>>Self-Employed</option>
+        <option value="1099" <%= emp.employment_type === '1099' ? 'selected' : '' %>>1099</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Pay Type</label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn pay-type-btn <%= emp.pay_type === 'salary' || !emp.pay_type ? 'active' : '' %>" data-value="salary">Salary</button>
+        <button type="button" class="toggle-btn pay-type-btn <%= emp.pay_type === 'hourly' ? 'active' : '' %>" data-value="hourly">Hourly</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="salary-fields <%= emp.pay_type === 'hourly' ? 'hidden' : '' %>">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Annual Salary</label>
+        <input type="number" class="emp-field" data-field="annual_salary" value="<%= emp.annual_salary || '' %>" placeholder="$0">
+      </div>
+      <div class="form-group">
+        <label>Monthly (calculated)</label>
+        <input type="text" class="emp-monthly-calc" readonly value="<%= emp.annual_salary ? '$' + (emp.annual_salary / 12).toLocaleString() : '' %>">
+      </div>
+    </div>
+  </div>
+
+  <div class="hourly-fields <%= emp.pay_type !== 'hourly' ? 'hidden' : '' %>">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Hourly Rate</label>
+        <input type="number" class="emp-field" data-field="hourly_rate" value="<%= emp.hourly_rate || '' %>" step="0.01" placeholder="$0">
+      </div>
+      <div class="form-group">
+        <label>Avg Hours/Week</label>
+        <input type="number" class="emp-field" data-field="hours_per_week" value="<%= emp.hours_per_week || '' %>" placeholder="40">
+      </div>
+      <div class="form-group">
+        <label>Monthly (calculated)</label>
+        <input type="text" class="emp-monthly-calc" readonly value="<%= emp.hourly_rate && emp.hours_per_week ? '$' + (emp.hourly_rate * emp.hours_per_week * 4.333).toLocaleString() : '' %>">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Overtime (monthly avg)</label>
+      <input type="number" class="emp-field" data-field="overtime_monthly" value="<%= emp.overtime_monthly || '' %>" placeholder="$0">
+    </div>
+    <div class="form-group">
+      <label>Bonus (monthly avg)</label>
+      <input type="number" class="emp-field" data-field="bonus_monthly" value="<%= emp.bonus_monthly || '' %>" placeholder="$0">
+    </div>
+    <div class="form-group">
+      <label>Commission (monthly avg)</label>
+      <input type="number" class="emp-field" data-field="commission_monthly" value="<%= emp.commission_monthly || '' %>" placeholder="$0">
+    </div>
+  </div>
+</div>

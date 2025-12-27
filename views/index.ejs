@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - ClearPath Utah Mortgage</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <h1>PathFinder Pro</h1>
+        <span class="tagline">ClearPath Utah Mortgage</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Knowledge Repository">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="welcome-section">
+        <h2>Loan Qualification Interviews</h2>
+        <a href="/new" class="btn btn-primary btn-lg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Start New Interview
+        </a>
+      </div>
+
+      <% if (borrowers.length > 0) { %>
+      <div class="borrower-list">
+        <h3>Recent Borrowers</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Purchase Price</th>
+              <th>Credit Score</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% borrowers.forEach(b => { %>
+            <tr>
+              <td>
+                <strong><%= b.first_name || 'New' %> <%= b.last_name || 'Borrower' %></strong>
+              </td>
+              <td>
+                <span class="status-badge status-<%= b.status %>">
+                  <%= b.status.charAt(0).toUpperCase() + b.status.slice(1) %>
+                </span>
+              </td>
+              <td>
+                <% if (b.purchase_price) { %>
+                  $<%= Number(b.purchase_price).toLocaleString() %>
+                <% } else { %>
+                  <span class="text-muted">-</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (b.credit_score) { %>
+                  <%= b.credit_score %>
+                <% } else { %>
+                  <span class="text-muted">-</span>
+                <% } %>
+              </td>
+              <td>
+                <%= new Date(b.updated_at).toLocaleDateString() %>
+              </td>
+              <td>
+                <a href="/interview/<%= b.id %>" class="btn btn-sm">Continue</a>
+                <button onclick="deleteBorrower(<%= b.id %>)" class="btn btn-sm btn-danger">Delete</button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state">
+        <p>No borrower interviews yet. Click "Start New Interview" to begin.</p>
+      </div>
+      <% } %>
+    </div>
+  </main>
+
+  <!-- Knowledge Repository Modal -->
+  <div id="knowledgeModal" class="modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2>Knowledge Repository</h2>
+        <button class="modal-close" onclick="closeKnowledgeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="knowledge-tabs">
+          <button class="knowledge-tab active" data-tab="urls">Website Scraping</button>
+          <button class="knowledge-tab" data-tab="emails">Email Receiver</button>
+          <button class="knowledge-tab" data-tab="pdfs">PDF Uploads</button>
+        </div>
+
+        <!-- URLs Tab -->
+        <div id="urls-content" class="knowledge-content active">
+          <div class="add-form">
+            <input type="text" id="urlName" placeholder="Name/Label">
+            <input type="url" id="urlInput" placeholder="https://...">
+            <select id="urlFrequency">
+              <option value="manual">Manual</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+            <button class="btn btn-primary" onclick="addUrl()">Add URL</button>
+          </div>
+          <table class="data-table" id="urlsTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Last Scraped</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Emails Tab -->
+        <div id="emails-content" class="knowledge-content">
+          <div class="info-box">
+            <strong>Email Address:</strong> pathfinder@mg.clearpathutah.com<br>
+            Forward lender newsletters and guidelines to this address to add them to your knowledge base.
+          </div>
+          <table class="data-table" id="emailsTable">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>Subject</th>
+                <th>Received</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- PDFs Tab -->
+        <div id="pdfs-content" class="knowledge-content">
+          <div class="upload-area" id="pdfDropZone">
+            <p>Drag & drop PDF files here or click to browse</p>
+            <input type="file" id="pdfInput" accept=".pdf" hidden>
+          </div>
+          <table class="data-table" id="pdfsTable">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Uploaded</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p>ClearPath Utah Mortgage | Kelly (801) 891-1846 | hello@clearpathutah.com</p>
+    </div>
+  </footer>
+
+  <script>
+    function openKnowledgeModal() {
+      document.getElementById('knowledgeModal').classList.add('active');
+      loadKnowledgeSources();
+    }
+
+    function closeKnowledgeModal() {
+      document.getElementById('knowledgeModal').classList.remove('active');
+    }
+
+    // Knowledge tab switching
+    document.querySelectorAll('.knowledge-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.knowledge-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.knowledge-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + '-content').classList.add('active');
+      });
+    });
+
+    async function loadKnowledgeSources() {
+      const res = await fetch('/knowledge');
+      const data = await res.json();
+
+      // Populate URLs
+      const urlsBody = document.querySelector('#urlsTable tbody');
+      urlsBody.innerHTML = data.urls.map(u => `
+        <tr>
+          <td>${u.name}</td>
+          <td><a href="${u.url}" target="_blank">${u.url.substring(0, 40)}...</a></td>
+          <td>${u.last_updated ? new Date(u.last_updated).toLocaleDateString() : 'Never'}</td>
+          <td>
+            <button class="btn btn-sm" onclick="scrapeUrl(${u.id})">Scrape Now</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUrl(${u.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Populate Emails
+      const emailsBody = document.querySelector('#emailsTable tbody');
+      emailsBody.innerHTML = data.emails.map(e => `
+        <tr>
+          <td>${e.from_address}</td>
+          <td>${e.subject}</td>
+          <td>${new Date(e.received_at).toLocaleDateString()}</td>
+          <td>
+            <button class="btn btn-sm" onclick="processEmail(${e.id})" ${e.processed ? 'disabled' : ''}>
+              ${e.processed ? 'Processed' : 'Process'}
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteEmail(${e.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Populate PDFs
+      const pdfsBody = document.querySelector('#pdfsTable tbody');
+      pdfsBody.innerHTML = data.pdfs.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${new Date(p.last_updated).toLocaleDateString()}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" onclick="deletePdf(${p.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function addUrl() {
+      const name = document.getElementById('urlName').value;
+      const url = document.getElementById('urlInput').value;
+      const frequency = document.getElementById('urlFrequency').value;
+
+      await fetch('/knowledge/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url, auto_scrape: frequency !== 'manual', scrape_frequency: frequency })
+      });
+
+      document.getElementById('urlName').value = '';
+      document.getElementById('urlInput').value = '';
+      loadKnowledgeSources();
+    }
+
+    async function scrapeUrl(id) {
+      await fetch(`/knowledge/url/${id}/scrape`, { method: 'POST' });
+      loadKnowledgeSources();
+    }
+
+    async function deleteUrl(id) {
+      if (confirm('Delete this URL?')) {
+        await fetch(`/knowledge/url/${id}`, { method: 'DELETE' });
+        loadKnowledgeSources();
+      }
+    }
+
+    async function processEmail(id) {
+      await fetch(`/knowledge/email/${id}/process`, { method: 'POST' });
+      loadKnowledgeSources();
+    }
+
+    async function deleteEmail(id) {
+      if (confirm('Delete this email?')) {
+        await fetch(`/knowledge/email/${id}`, { method: 'DELETE' });
+        loadKnowledgeSources();
+      }
+    }
+
+    async function deletePdf(id) {
+      if (confirm('Delete this PDF?')) {
+        await fetch(`/knowledge/pdf/${id}`, { method: 'DELETE' });
+        loadKnowledgeSources();
+      }
+    }
+
+    // PDF Upload
+    const dropZone = document.getElementById('pdfDropZone');
+    const pdfInput = document.getElementById('pdfInput');
+
+    dropZone.addEventListener('click', () => pdfInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      for (const file of files) {
+        if (file.type === 'application/pdf') {
+          await uploadPdf(file);
+        }
+      }
+    });
+
+    pdfInput.addEventListener('change', async () => {
+      for (const file of pdfInput.files) {
+        await uploadPdf(file);
+      }
+      pdfInput.value = '';
+    });
+
+    async function uploadPdf(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      await fetch('/knowledge/pdf', { method: 'POST', body: formData });
+      loadKnowledgeSources();
+    }
+
+    async function deleteBorrower(id) {
+      if (confirm('Delete this borrower? This cannot be undone.')) {
+        await fetch(`/borrowers/${id}`, { method: 'DELETE' });
+        window.location.reload();
+      }
+    }
+
+    // Close modal on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeKnowledgeModal();
+    });
+  </script>
+</body>
+</html>
