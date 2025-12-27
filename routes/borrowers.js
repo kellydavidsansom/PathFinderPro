@@ -20,9 +20,11 @@ router.post('/:id/save', (req, res) => {
     'co_citizenship_status',
     'employers', 'other_income', 'co_employers', 'co_other_income',
     'assets', 'debts',
-    'purchase_price', 'down_payment_amount', 'down_payment_percent',
+    'loan_purpose', 'purchase_price', 'down_payment_amount', 'down_payment_percent',
     'property_type', 'occupancy', 'property_state', 'property_county',
     'property_taxes_annual', 'hoa_monthly', 'insurance_annual', 'interest_rate',
+    'refinance_type', 'property_value', 'current_loan_balance', 'current_interest_rate',
+    'cash_out_amount', 'cash_out_purpose',
     'credit_score', 'co_credit_score', 'late_payments_12', 'late_payments_24',
     'bankruptcy', 'foreclosure', 'collections', 'collections_amount',
     'status'
@@ -170,11 +172,27 @@ function calculateBorrowerMetrics(borrower) {
     totalMonthlyDebts += parseFloat(debt.monthly_payment) || 0;
   }
 
-  // Property calculations
-  const purchasePrice = parseFloat(borrower.purchase_price) || 0;
-  const downPaymentAmount = parseFloat(borrower.down_payment_amount) || 0;
-  const loanAmount = purchasePrice - downPaymentAmount;
-  const ltv = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0;
+  // Property calculations - handle Purchase vs Refinance
+  const loanPurpose = borrower.loan_purpose || 'Purchase';
+  let loanAmount = 0;
+  let ltv = 0;
+  let propertyValue = 0;
+
+  if (loanPurpose === 'Refinance') {
+    // Refinance: loan amount based on current balance + cash out
+    propertyValue = parseFloat(borrower.property_value) || 0;
+    const currentLoanBalance = parseFloat(borrower.current_loan_balance) || 0;
+    const cashOutAmount = parseFloat(borrower.cash_out_amount) || 0;
+    loanAmount = currentLoanBalance + cashOutAmount;
+    ltv = propertyValue > 0 ? (loanAmount / propertyValue) * 100 : 0;
+  } else {
+    // Purchase: loan amount = purchase price - down payment
+    const purchasePrice = parseFloat(borrower.purchase_price) || 0;
+    const downPaymentAmount = parseFloat(borrower.down_payment_amount) || 0;
+    propertyValue = purchasePrice;
+    loanAmount = purchasePrice - downPaymentAmount;
+    ltv = purchasePrice > 0 ? (loanAmount / purchasePrice) * 100 : 0;
+  }
 
   // Calculate monthly PITI
   const interestRate = parseFloat(borrower.interest_rate) || 7.0;
@@ -209,10 +227,19 @@ function calculateBorrowerMetrics(borrower) {
     return maxLoan / (1 - downPaymentPercent);
   };
 
-  // Estimated cash to close
+  // Estimated cash to close (varies by loan purpose)
   const closingCosts = loanAmount * 0.03; // Estimate 3% closing costs
   const prepaidItems = (monthlyTaxes + monthlyInsurance) * 6; // 6 months escrow
-  const cashToClose = downPaymentAmount + closingCosts + prepaidItems;
+  let cashToClose = 0;
+
+  if (loanPurpose === 'Refinance') {
+    // For refinance, only closing costs (can potentially be rolled into loan)
+    cashToClose = closingCosts + prepaidItems;
+  } else {
+    // For purchase, down payment + closing costs + prepaids
+    const downPaymentAmount = parseFloat(borrower.down_payment_amount) || 0;
+    cashToClose = downPaymentAmount + closingCosts + prepaidItems;
+  }
 
   return {
     // Income

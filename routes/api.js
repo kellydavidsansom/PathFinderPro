@@ -420,8 +420,13 @@ DEBTS:
 - Current DTI (before housing): ${calculations.currentDTI.toFixed(1)}%
 
 PROPERTY:
-- Purchase Price: $${borrower.purchase_price || 0}
-- Down Payment: $${borrower.down_payment_amount || 0}
+- Loan Purpose: ${borrower.loan_purpose || 'Purchase'}
+${borrower.loan_purpose === 'Refinance' ? `- Property Value: $${borrower.property_value || 0}
+- Current Loan Balance: $${borrower.current_loan_balance || 0}
+- Refinance Type: ${borrower.refinance_type || 'Rate/Term'}
+${borrower.cash_out_amount ? `- Cash Out Amount: $${borrower.cash_out_amount}` : ''}
+${borrower.cash_out_purpose ? `- Cash Out Purpose: ${borrower.cash_out_purpose}` : ''}` : `- Purchase Price: $${borrower.purchase_price || 0}
+- Down Payment: $${borrower.down_payment_amount || 0}`}
 - Loan Amount: $${calculations.loanAmount.toFixed(2)}
 - LTV: ${calculations.ltv.toFixed(1)}%
 - Property Type: ${borrower.property_type || 'Not specified'}
@@ -462,13 +467,21 @@ Format your response in clear sections with headers.`;
 }
 
 function buildChatSystemPrompt(borrower, calculations, knowledge) {
+  const isRefinance = borrower.loan_purpose === 'Refinance';
+
   return `You are a helpful mortgage loan officer assistant for ClearPath Utah Mortgage. You're chatting about a specific borrower's scenario.
 
 CURRENT BORROWER CONTEXT:
 - Name: ${borrower.first_name} ${borrower.last_name}
+- Loan Purpose: ${borrower.loan_purpose || 'Purchase'}
 - Monthly Income: $${calculations.totalMonthlyIncome.toFixed(2)}
 - Monthly Debts: $${calculations.totalMonthlyDebts.toFixed(2)}
-- Target Purchase: $${borrower.purchase_price || 'Not specified'}
+${isRefinance
+    ? `- Property Value: $${borrower.property_value || 'Not specified'}
+- Current Loan Balance: $${borrower.current_loan_balance || 'Not specified'}
+- Refinance Type: ${borrower.refinance_type || 'Rate/Term'}
+${borrower.cash_out_amount ? `- Cash Out Amount: $${borrower.cash_out_amount}` : ''}`
+    : `- Target Purchase: $${borrower.purchase_price || 'Not specified'}`}
 - Credit Score: ${borrower.credit_score || 'Not provided'}
 - Back-End DTI: ${calculations.backEndDTI.toFixed(1)}%
 - LTV: ${calculations.ltv.toFixed(1)}%
@@ -483,6 +496,15 @@ Be helpful, specific, and reference the borrower's actual numbers when answering
 function generateMISMOXML(borrower, calculations) {
   const loanAmount = calculations.loanAmount;
   const today = new Date().toISOString().split('T')[0];
+  const loanPurpose = borrower.loan_purpose || 'Purchase';
+  const isRefinance = loanPurpose === 'Refinance';
+  const propertyValue = isRefinance ? (borrower.property_value || 0) : (borrower.purchase_price || 0);
+
+  // Map loan purpose to MISMO type
+  let loanPurposeType = 'Purchase';
+  if (isRefinance) {
+    loanPurposeType = borrower.refinance_type === 'Cash-Out' ? 'CashOutRefinance' : 'NoCashOutRefinance';
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <MESSAGE xmlns="http://www.mismo.org/residential/2009/schemas"
@@ -506,11 +528,16 @@ function generateMISMOXML(borrower, calculations) {
               </LOAN_IDENTIFIERS>
               <TERMS_OF_LOAN>
                 <BaseLoanAmount>${loanAmount.toFixed(2)}</BaseLoanAmount>
-                <LoanPurposeType>Purchase</LoanPurposeType>
+                <LoanPurposeType>${loanPurposeType}</LoanPurposeType>
                 <MortgageType>Conventional</MortgageType>
                 <NoteAmount>${loanAmount.toFixed(2)}</NoteAmount>
                 <NoteRatePercent>${borrower.interest_rate || 7.0}</NoteRatePercent>
-              </TERMS_OF_LOAN>
+              </TERMS_OF_LOAN>${isRefinance ? `
+              <REFINANCE>
+                <RefinancePrimaryPurposeType>${borrower.refinance_type === 'Cash-Out' ? 'CashOutOther' : 'RateTermRefinance'}</RefinancePrimaryPurposeType>
+                ${borrower.cash_out_amount ? `<RefinanceCashOutAmount>${borrower.cash_out_amount}</RefinanceCashOutAmount>` : ''}
+                ${borrower.cash_out_purpose ? `<RefinanceCashOutDeterminationType>${escapeXml(borrower.cash_out_purpose)}</RefinanceCashOutDeterminationType>` : ''}
+              </REFINANCE>` : ''}
             </LOAN>
           </LOANS>
           <PARTIES>
@@ -610,7 +637,7 @@ function generateMISMOXML(borrower, calculations) {
                   <CountyName>${escapeXml(borrower.property_county || '')}</CountyName>
                 </ADDRESS>
                 <PROPERTY_DETAIL>
-                  <PropertyEstimatedValueAmount>${borrower.purchase_price || 0}</PropertyEstimatedValueAmount>
+                  <PropertyEstimatedValueAmount>${propertyValue}</PropertyEstimatedValueAmount>
                   <PropertyUsageType>${borrower.occupancy || 'PrimaryResidence'}</PropertyUsageType>
                   <ConstructionMethodType>${borrower.property_type || 'SiteBuilt'}</ConstructionMethodType>
                 </PROPERTY_DETAIL>

@@ -103,27 +103,43 @@ function initToggleButtons() {
   document.querySelectorAll('.toggle-btn[data-field]').forEach(btn => {
     btn.addEventListener('click', () => {
       const field = btn.dataset.field;
-      const value = parseInt(btn.dataset.value);
+      const value = btn.dataset.value;
 
       // Update UI
       const group = btn.parentElement;
       group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      // Save
-      scheduleAutoSave({ [field]: value });
+      // Save - convert to int for boolean fields
+      const saveValue = ['has_coborrower', 'collections', 'late_payments_12', 'late_payments_24', 'first_time_homebuyer'].includes(field)
+        ? parseInt(value)
+        : value;
+      scheduleAutoSave({ [field]: saveValue });
 
       // Handle special cases
       if (field === 'has_coborrower') {
-        toggleCoBorrowerFields(value);
+        toggleCoBorrowerFields(parseInt(value));
       }
       if (field === 'collections') {
-        toggleCollectionsAmount(value);
+        toggleCollectionsAmount(parseInt(value));
+      }
+      if (field === 'loan_purpose') {
+        toggleLoanPurposeFields(value);
       }
 
       updateCreditFlags();
+      updatePropertyCalculations();
     });
   });
+}
+
+// Loan Purpose Toggle (Purchase vs Refinance)
+function toggleLoanPurposeFields(purpose) {
+  const purchaseFields = document.getElementById('purchaseFields');
+  const refinanceFields = document.getElementById('refinanceFields');
+
+  if (purchaseFields) purchaseFields.classList.toggle('hidden', purpose === 'Refinance');
+  if (refinanceFields) refinanceFields.classList.toggle('hidden', purpose !== 'Refinance');
 }
 
 // Co-Borrower Toggle
@@ -616,22 +632,47 @@ function initPropertyCalculations() {
     });
   }
 
-  // Listen to other property inputs
+  // Listen to other property inputs (including refinance fields)
   document.querySelectorAll('#property-tab [data-autosave]').forEach(input => {
     input.addEventListener('input', updatePropertyCalculations);
   });
+
+  // Initialize loan purpose toggle state
+  initLoanPurposeToggle();
+}
+
+// Initialize loan purpose toggle on page load
+function initLoanPurposeToggle() {
+  const activePurpose = document.querySelector('[data-field="loan_purpose"].active')?.dataset.value || 'Purchase';
+  toggleLoanPurposeFields(activePurpose);
 }
 
 function updatePropertyCalculations() {
-  const price = parseFloat(document.querySelector('[name="purchase_price"]')?.value) || 0;
-  const downPayment = parseFloat(document.querySelector('[name="down_payment_amount"]')?.value) || 0;
+  const loanPurpose = document.querySelector('[data-field="loan_purpose"].active')?.dataset.value || 'Purchase';
   const rate = parseFloat(document.querySelector('[name="interest_rate"]')?.value) || 7.0;
   const taxesAnnual = parseFloat(document.querySelector('[name="property_taxes_annual"]')?.value) || 0;
   const insuranceAnnual = parseFloat(document.querySelector('[name="insurance_annual"]')?.value) || 0;
   const hoaMonthly = parseFloat(document.querySelector('[name="hoa_monthly"]')?.value) || 0;
 
-  const loanAmount = price - downPayment;
-  const ltv = price > 0 ? (loanAmount / price) * 100 : 0;
+  let loanAmount = 0;
+  let ltv = 0;
+  let propertyValue = 0;
+
+  if (loanPurpose === 'Refinance') {
+    // Refinance calculations
+    propertyValue = parseFloat(document.querySelector('[name="property_value"]')?.value) || 0;
+    const currentLoanBalance = parseFloat(document.querySelector('[name="current_loan_balance"]')?.value) || 0;
+    const cashOutAmount = parseFloat(document.querySelector('[name="cash_out_amount"]')?.value) || 0;
+    loanAmount = currentLoanBalance + cashOutAmount;
+    ltv = propertyValue > 0 ? (loanAmount / propertyValue) * 100 : 0;
+  } else {
+    // Purchase calculations
+    const price = parseFloat(document.querySelector('[name="purchase_price"]')?.value) || 0;
+    const downPayment = parseFloat(document.querySelector('[name="down_payment_amount"]')?.value) || 0;
+    propertyValue = price;
+    loanAmount = price - downPayment;
+    ltv = price > 0 ? (loanAmount / price) * 100 : 0;
+  }
 
   // Calculate P&I
   const monthlyRate = rate / 100 / 12;

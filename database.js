@@ -92,6 +92,7 @@ function initialize() {
       debts JSON DEFAULT '[]',
 
       -- Property Info
+      loan_purpose TEXT DEFAULT 'Purchase',
       purchase_price REAL,
       down_payment_amount REAL,
       down_payment_percent REAL,
@@ -103,6 +104,14 @@ function initialize() {
       hoa_monthly REAL,
       insurance_annual REAL,
       interest_rate REAL DEFAULT 7.0,
+
+      -- Refinance Info
+      refinance_type TEXT,
+      property_value REAL,
+      current_loan_balance REAL,
+      current_interest_rate REAL,
+      cash_out_amount REAL,
+      cash_out_purpose TEXT,
 
       -- Credit Info
       credit_score INTEGER,

@@ -416,21 +416,77 @@
       <div class="tab-layout">
         <div class="tab-main">
           <div class="form-section">
-            <h3>Subject Property</h3>
+            <h3>Loan Details</h3>
             <div class="form-grid">
               <div class="form-group">
-                <label>Purchase Price</label>
-                <input type="number" name="purchase_price" id="purchasePrice" value="<%= borrower.purchase_price || '' %>" placeholder="$0" data-autosave>
-              </div>
-              <div class="form-group">
-                <label>Down Payment ($)</label>
-                <input type="number" name="down_payment_amount" id="downPaymentAmount" value="<%= borrower.down_payment_amount || '' %>" placeholder="$0" data-autosave>
-              </div>
-              <div class="form-group">
-                <label>Down Payment (%)</label>
-                <input type="number" name="down_payment_percent" id="downPaymentPercent" value="<%= borrower.down_payment_percent || '' %>" placeholder="%" step="0.1" data-autosave>
+                <label>Loan Purpose</label>
+                <div class="toggle-group">
+                  <button type="button" class="toggle-btn <%= !borrower.loan_purpose || borrower.loan_purpose === 'Purchase' ? 'active' : '' %>" data-field="loan_purpose" data-value="Purchase" id="loanPurposePurchase">Purchase</button>
+                  <button type="button" class="toggle-btn <%= borrower.loan_purpose === 'Refinance' ? 'active' : '' %>" data-field="loan_purpose" data-value="Refinance" id="loanPurposeRefinance">Refinance</button>
+                </div>
               </div>
             </div>
+
+            <!-- Purchase Fields -->
+            <div id="purchaseFields" class="<%= borrower.loan_purpose === 'Refinance' ? 'hidden' : '' %>">
+              <h4>Purchase Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Purchase Price</label>
+                  <input type="number" name="purchase_price" id="purchasePrice" value="<%= borrower.purchase_price || '' %>" placeholder="$0" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Down Payment ($)</label>
+                  <input type="number" name="down_payment_amount" id="downPaymentAmount" value="<%= borrower.down_payment_amount || '' %>" placeholder="$0" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Down Payment (%)</label>
+                  <input type="number" name="down_payment_percent" id="downPaymentPercent" value="<%= borrower.down_payment_percent || '' %>" placeholder="%" step="0.1" data-autosave>
+                </div>
+              </div>
+            </div>
+
+            <!-- Refinance Fields -->
+            <div id="refinanceFields" class="<%= borrower.loan_purpose !== 'Refinance' ? 'hidden' : '' %>">
+              <h4>Refinance Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Refinance Type</label>
+                  <select name="refinance_type" data-autosave>
+                    <option value="">Select...</option>
+                    <option value="Rate/Term" <%= borrower.refinance_type === 'Rate/Term' ? 'selected' : '' %>>Rate/Term</option>
+                    <option value="Cash Out" <%= borrower.refinance_type === 'Cash Out' ? 'selected' : '' %>>Cash Out</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Property Value</label>
+                  <input type="number" name="property_value" id="propertyValue" value="<%= borrower.property_value || '' %>" placeholder="$0" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Current Loan Balance</label>
+                  <input type="number" name="current_loan_balance" id="currentLoanBalance" value="<%= borrower.current_loan_balance || '' %>" placeholder="$0" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Current Interest Rate (%)</label>
+                  <input type="number" name="current_interest_rate" value="<%= borrower.current_interest_rate || '' %>" placeholder="%" step="0.125" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Cash Out Amount</label>
+                  <input type="number" name="cash_out_amount" id="cashOutAmount" value="<%= borrower.cash_out_amount || '' %>" placeholder="$0" data-autosave>
+                </div>
+                <div class="form-group">
+                  <label>Cash Out Purpose</label>
+                  <select name="cash_out_purpose" data-autosave>
+                    <option value="">Select...</option>
+                    <option value="Home Improvement" <%= borrower.cash_out_purpose === 'Home Improvement' ? 'selected' : '' %>>Home Improvement</option>
+                    <option value="Debt Consolidation" <%= borrower.cash_out_purpose === 'Debt Consolidation' ? 'selected' : '' %>>Debt Consolidation</option>
+                    <option value="Other" <%= borrower.cash_out_purpose === 'Other' ? 'selected' : '' %>>Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <h4>Property Information</h4>
 
             <div class="form-grid">
               <div class="form-group">
