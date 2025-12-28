@@ -179,6 +179,39 @@ function initialize() {
     )
   `);
 
+  // Add new columns if they don't exist (migration for existing databases)
+  const addColumnIfNotExists = (table, column, definition) => {
+    try {
+      database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      console.log(`Added column ${column} to ${table}`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
+  };
+
+  // New borrower fields (added Dec 2025)
+  addColumnIfNotExists('borrowers', 'military_status', "TEXT DEFAULT 'None'");
+  addColumnIfNotExists('borrowers', 'employment_type', 'TEXT');
+  addColumnIfNotExists('borrowers', 'current_housing', "TEXT DEFAULT 'Rent'");
+  addColumnIfNotExists('borrowers', 'monthly_rent', 'REAL');
+  addColumnIfNotExists('borrowers', 'planning_to_sell_home', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('borrowers', 'co_military_status', "TEXT DEFAULT 'None'");
+  addColumnIfNotExists('borrowers', 'co_employment_type', 'TEXT');
+  addColumnIfNotExists('borrowers', 'subject_property_street', 'TEXT');
+  addColumnIfNotExists('borrowers', 'subject_property_city', 'TEXT');
+  addColumnIfNotExists('borrowers', 'subject_property_zip', 'TEXT');
+  addColumnIfNotExists('borrowers', 'home_buying_stage', "TEXT DEFAULT 'Just Getting Started'");
+  addColumnIfNotExists('borrowers', 'preferred_loan_type', "TEXT DEFAULT 'Not Sure'");
+
+  // Refinance fields (if not already added)
+  addColumnIfNotExists('borrowers', 'loan_purpose', "TEXT DEFAULT 'Purchase'");
+  addColumnIfNotExists('borrowers', 'refinance_type', 'TEXT');
+  addColumnIfNotExists('borrowers', 'property_value', 'REAL');
+  addColumnIfNotExists('borrowers', 'current_loan_balance', 'REAL');
+  addColumnIfNotExists('borrowers', 'current_interest_rate', 'REAL');
+  addColumnIfNotExists('borrowers', 'cash_out_amount', 'REAL');
+  addColumnIfNotExists('borrowers', 'cash_out_purpose', 'TEXT');
+
   console.log('Database initialized successfully');
   return database;
 }
