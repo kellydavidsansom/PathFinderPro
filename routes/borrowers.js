@@ -226,7 +226,10 @@ function calculateBorrowerMetrics(borrower) {
     const maxPI = maxPITI - monthlyTaxes - monthlyInsurance - monthlyHOA;
     if (maxPI <= 0 || monthlyRate <= 0) return 0;
     const maxLoan = maxPI * (Math.pow(1 + monthlyRate, numPayments) - 1) / (monthlyRate * Math.pow(1 + monthlyRate, numPayments));
-    const downPaymentPercent = purchasePrice > 0 ? (downPaymentAmount / purchasePrice) : 0.03;
+    // Use borrower's down payment percent or default to 3%
+    const price = parseFloat(borrower.purchase_price) || 0;
+    const downPmt = parseFloat(borrower.down_payment_amount) || 0;
+    const downPaymentPercent = price > 0 ? (downPmt / price) : 0.03;
     return maxLoan / (1 - downPaymentPercent);
   };
 
