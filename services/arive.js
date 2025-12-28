@@ -3,28 +3,91 @@
 
 const ARIVE_BASE_URL = 'https://3146.myarive.com';
 const ARIVE_API_KEY = process.env.ARIVE_API_KEY;
+const ARIVE_SECRET_KEY = process.env.ARIVE_SECRET_KEY;
 const ASSIGNEE_EMAIL = process.env.ARIVE_ASSIGNEE_EMAIL || 'hello@clearpathutah.com';
+
+// Cache the access token
+let cachedToken = null;
+let tokenExpiry = null;
+
+/**
+ * Get an access token from Arive (with caching)
+ */
+async function getAccessToken() {
+  // Return cached token if still valid (with 5 min buffer)
+  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry - 300000) {
+    return cachedToken;
+  }
+
+  if (!ARIVE_API_KEY || !ARIVE_SECRET_KEY) {
+    throw new Error('ARIVE_API_KEY and ARIVE_SECRET_KEY must both be configured');
+  }
+
+  const fetch = (await import('node-fetch')).default;
+
+  console.log('Authenticating with Arive...');
+
+  // Build auth payload with available credentials
+  const authPayload = {
+    apiKey: ARIVE_API_KEY,
+    secret: ARIVE_SECRET_KEY
+  };
+
+  // Add optional credentials if configured
+  if (process.env.ARIVE_CLIENT_ID) authPayload.clientId = process.env.ARIVE_CLIENT_ID;
+  if (process.env.ARIVE_APP_ID) authPayload.appId = process.env.ARIVE_APP_ID;
+  if (process.env.ARIVE_APP_SECRET_HASH) authPayload.appSecretHash = process.env.ARIVE_APP_SECRET_HASH;
+
+  console.log('Auth payload keys:', Object.keys(authPayload));
+
+  const response = await fetch(`${ARIVE_BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(authPayload)
+  });
+
+  const responseText = await response.text();
+  console.log('Auth Response Status:', response.status);
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    console.error('Auth returned non-JSON:', responseText.substring(0, 200));
+    throw new Error(`Arive auth failed: ${response.status} - Invalid response`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.message || `Arive auth failed: ${response.status}`);
+  }
+
+  // Cache the token
+  cachedToken = data.AccessToken;
+  tokenExpiry = Date.now() + (data.ExpiresIn * 1000);
+
+  console.log('Arive authentication successful, token expires in', data.ExpiresIn, 'seconds');
+
+  return cachedToken;
+}
 
 /**
  * Send a borrower to Arive as a new lead
  */
 async function createLead(borrower, calculations) {
-  if (!ARIVE_API_KEY) {
-    throw new Error('ARIVE_API_KEY not configured');
-  }
-
+  const accessToken = await getAccessToken();
   const payload = buildArivePayload(borrower, calculations);
 
   const fetch = (await import('node-fetch')).default;
 
   console.log('Sending to Arive:', `${ARIVE_BASE_URL}/api/leads?sync=true`);
-  console.log('Payload:', JSON.stringify(payload, null, 2));
 
   const response = await fetch(`${ARIVE_BASE_URL}/api/leads?sync=true`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-KEY': ARIVE_API_KEY
+      'Authorization': `Bearer ${accessToken}`
     },
     body: JSON.stringify(payload)
   });
@@ -41,7 +104,7 @@ async function createLead(borrower, calculations) {
   } catch (e) {
     // Response is not JSON (probably HTML error page)
     console.error('Arive returned non-JSON response:', responseText.substring(0, 200));
-    throw new Error(`Arive API returned ${response.status}: Not a valid JSON response. Check API endpoint and credentials.`);
+    throw new Error(`Arive API returned ${response.status}: Not a valid JSON response.`);
   }
 
   if (!response.ok) {
