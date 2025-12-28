@@ -169,7 +169,21 @@ function formatBorrowerForZapier(b, calculations) {
       impound_waiver: 'None Waived',
 
       // Loan purpose
-      loan_purpose: b.loan_purpose || 'Purchase'
+      loan_purpose: b.loan_purpose || 'Purchase',
+
+      // Refinance-specific fields
+      refinance_type: b.refinance_type || null,  // Rate/Term, Cash Out
+      cash_out_purpose: b.cash_out_purpose || null,
+      current_interest_rate: b.current_interest_rate || null,
+
+      // Income/Liability
+      annual_income: calculations.annualIncome || 0,
+      total_monthly_liability: calculations.totalMonthlyDebts || 0,
+
+      // Monthly costs
+      monthly_insurance: calculations.monthlyInsurance || 0,
+      monthly_taxes: calculations.monthlyTaxes || 0,
+      monthly_hoa: calculations.monthlyHOA || 0
     }
   };
 }
