@@ -37,13 +37,13 @@ function formatBorrowerForZapier(b, calculations) {
     return d.toISOString().split('T')[0];
   };
 
-  // Map military status to Arive format
+  // Map military status to Arive format (no spaces, camelCase)
   const mapMilitaryStatus = (status) => {
     const map = {
       'None': null,
-      'Active Duty': 'Active Duty',
+      'Active Duty': 'ActiveDuty',
       'Veteran': 'Veteran',
-      'Reserve/National Guard': 'Reserve National Guard Never Activated'
+      'Reserve/National Guard': 'ReserveNationalGuardNeverActivated'
     };
     return map[status] || null;
   };
@@ -53,7 +53,7 @@ function formatBorrowerForZapier(b, calculations) {
     const map = {
       'Just Getting Started': 'GETTING_STARTED',
       'Making Offers': 'MAKING_OFFERS',
-      'Found a House/Offer Pending': 'OFFER_PENDING',
+      'Found a House/Offer Pending': 'FOUND_A_HOUSE_OR_OFFER_PENDING',
       'Under Contract': 'UNDER_CONTRACT'
     };
     return map[stage] || 'GETTING_STARTED';
@@ -66,6 +66,46 @@ function formatBorrowerForZapier(b, calculations) {
     if (value === '2+ years ago') return 3;
     if (value === '3+ years ago') return 4;
     return null;
+  };
+
+  // Map property usage/occupancy to Arive format (no spaces)
+  const mapPropertyUsage = (occupancy) => {
+    const map = {
+      'Primary Residence': 'PrimaryResidence',
+      'Second Home': 'SecondHome',
+      'Investment': 'Investment'
+    };
+    return map[occupancy] || null;
+  };
+
+  // Map current housing to Arive Occupancy Type format
+  const mapCurrentHousing = (housing) => {
+    const map = {
+      'Own': 'Own',
+      'Rent': 'Rent',
+      'Living Rent Free': 'LivingRentFree'
+    };
+    return map[housing] || 'Rent';
+  };
+
+  // Map state name to 2-letter code
+  const mapStateCode = (state) => {
+    const stateCodes = {
+      'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+      'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+      'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+      'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+      'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+      'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+      'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+      'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+      'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+      'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+      'District of Columbia': 'DC'
+    };
+    // If already a 2-letter code, return as-is
+    if (state && state.length === 2) return state.toUpperCase();
+    return stateCodes[state] || state;
   };
 
   return {
@@ -83,7 +123,7 @@ function formatBorrowerForZapier(b, calculations) {
       birth_date: formatDate(b.date_of_birth),
       co_birth_date: formatDate(b.co_date_of_birth),
 
-      // Military status
+      // Military status (Arive format: ActiveDuty, Veteran, ReserveNationalGuardNeverActivated)
       military_service_type: mapMilitaryStatus(b.military_status),
       co_military_service_type: mapMilitaryStatus(b.co_military_status),
 
@@ -97,8 +137,11 @@ function formatBorrowerForZapier(b, calculations) {
       // Subject property TBD indicator
       subject_property_tbd: !b.subject_property_street,
 
-      // Occupancy type mapping
-      occupancy_type: b.current_housing || 'Rent',
+      // Current housing / Occupancy Type (Arive format: Own, Rent, LivingRentFree)
+      occupancy_type: mapCurrentHousing(b.current_housing),
+
+      // Property Usage Type (Arive format: PrimaryResidence, SecondHome, Investment)
+      property_usage_type: mapPropertyUsage(b.occupancy),
 
       // Property value (works for both purchase and refi)
       property_value: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price,
@@ -113,7 +156,20 @@ function formatBorrowerForZapier(b, calculations) {
       base_loan_amount: Math.max(0, calculations.loanAmount || 0),
 
       // Monthly rent (only if renting)
-      monthly_rent: b.current_housing === 'Rent' ? (b.monthly_rent || 0) : null
+      monthly_rent: mapCurrentHousing(b.current_housing) === 'Rent' ? (b.monthly_rent || 0) : null,
+
+      // State codes (2-letter format)
+      borrower_state: mapStateCode(b.state),
+      property_state: mapStateCode(b.property_state),
+
+      // Lien position (default to FirstLien for most mortgages)
+      lien_position: 'FirstLien',
+
+      // Impound waiver (default to None Waived)
+      impound_waiver: 'None Waived',
+
+      // Loan purpose
+      loan_purpose: b.loan_purpose || 'Purchase'
     }
   };
 }
