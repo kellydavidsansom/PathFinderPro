@@ -989,31 +989,10 @@ function updateCalculationDisplay(calc) {
     document.getElementById('calcCurrentDTI').textContent = (calc.currentDTI || 0).toFixed(1) + '%';
   }
 
-  // Property
-  if (document.getElementById('calcLoanAmount')) {
-    document.getElementById('calcLoanAmount').textContent = formatCurrency(calc.loanAmount || 0);
-  }
-  if (document.getElementById('calcLTV')) {
-    document.getElementById('calcLTV').textContent = (calc.ltv || 0).toFixed(1) + '%';
-  }
-  if (document.getElementById('calcPI')) {
-    document.getElementById('calcPI').textContent = formatCurrency(calc.principalAndInterest || 0);
-  }
-  if (document.getElementById('calcTaxes')) {
-    document.getElementById('calcTaxes').textContent = formatCurrency(calc.monthlyTaxes || 0);
-  }
-  if (document.getElementById('calcInsurance')) {
-    document.getElementById('calcInsurance').textContent = formatCurrency(calc.monthlyInsurance || 0);
-  }
-  if (document.getElementById('calcHOA')) {
-    document.getElementById('calcHOA').textContent = formatCurrency(calc.monthlyHOA || 0);
-  }
-  if (document.getElementById('calcPITI')) {
-    document.getElementById('calcPITI').textContent = formatCurrency(calc.totalPITI || 0);
-  }
-
-  // Summary
-  updateAllCalculations();
+  // DON'T overwrite property calculations from server - always use form values
+  // This prevents stale server data from overwriting correct client-side calculations
+  // Instead, recalculate property values from form inputs
+  updatePropertyCalculations();
 }
 
 // AI Analysis
@@ -1114,7 +1093,7 @@ function exportMISMO() {
   window.location.href = `/api/export/mismo/${BORROWER_ID}`;
 }
 
-// Send to Arive via Zapier integration
+// Send to Arive directly via API
 async function sendToArive() {
   const btn = document.getElementById('sendToAriveBtn');
   const status = document.getElementById('ariveStatus');
@@ -1135,7 +1114,20 @@ async function sendToArive() {
       btn.querySelector('span').textContent = 'Sent to Arive';
       btn.classList.remove('btn-primary');
       btn.classList.add('btn-success');
-      status.textContent = 'Borrower marked as qualified. Zapier will sync to Arive.';
+
+      if (result.ariveLeadId) {
+        // Direct Arive API success
+        status.innerHTML = `Lead sent to Arive! Lead ID: ${result.ariveLeadId}`;
+        if (result.deepLinkURL) {
+          status.innerHTML += ` <a href="${result.deepLinkURL}" target="_blank">Open in Arive</a>`;
+        }
+      } else if (result.fallback) {
+        // Fallback to Zapier
+        status.textContent = result.message;
+        status.style.color = '#f59e0b'; // Warning color
+      } else {
+        status.textContent = result.message || 'Lead sent successfully!';
+      }
       status.style.color = '#10b981';
     } else {
       throw new Error(result.error || 'Failed to send');
