@@ -17,6 +17,9 @@ async function createLead(borrower, calculations) {
 
   const fetch = (await import('node-fetch')).default;
 
+  console.log('Sending to Arive:', `${ARIVE_BASE_URL}/api/leads?sync=true`);
+  console.log('Payload:', JSON.stringify(payload, null, 2));
+
   const response = await fetch(`${ARIVE_BASE_URL}/api/leads?sync=true`, {
     method: 'POST',
     headers: {
@@ -26,7 +29,20 @@ async function createLead(borrower, calculations) {
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  // Get the response as text first to handle HTML error pages
+  const responseText = await response.text();
+  console.log('Arive Response Status:', response.status);
+  console.log('Arive Response:', responseText.substring(0, 500));
+
+  // Try to parse as JSON
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    // Response is not JSON (probably HTML error page)
+    console.error('Arive returned non-JSON response:', responseText.substring(0, 200));
+    throw new Error(`Arive API returned ${response.status}: Not a valid JSON response. Check API endpoint and credentials.`);
+  }
 
   if (!response.ok) {
     console.error('Arive API Error:', data);

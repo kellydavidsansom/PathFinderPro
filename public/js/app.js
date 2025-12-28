@@ -641,9 +641,15 @@ function initPropertyCalculations() {
     dpAmountInput.addEventListener('input', () => {
       const price = parseFloat(priceInput?.value) || 0;
       const amount = parseFloat(dpAmountInput.value) || 0;
+      const percent = price > 0 ? ((amount / price) * 100) : 0;
       if (price > 0) {
-        dpPercentInput.value = ((amount / price) * 100).toFixed(1);
+        dpPercentInput.value = percent.toFixed(1);
       }
+      // Save both amount and calculated percent
+      scheduleAutoSave({
+        down_payment_amount: amount,
+        down_payment_percent: percent
+      });
       updatePropertyCalculations();
     });
   }
@@ -652,7 +658,13 @@ function initPropertyCalculations() {
     dpPercentInput.addEventListener('input', () => {
       const price = parseFloat(priceInput?.value) || 0;
       const percent = parseFloat(dpPercentInput.value) || 0;
-      dpAmountInput.value = Math.round(price * (percent / 100));
+      const amount = Math.round(price * (percent / 100));
+      dpAmountInput.value = amount;
+      // Manually trigger save since programmatic value change doesn't fire change event
+      scheduleAutoSave({
+        down_payment_amount: amount,
+        down_payment_percent: percent
+      });
       updatePropertyCalculations();
     });
   }
