@@ -24,6 +24,88 @@ function apiKeyAuth(req, res, next) {
   next();
 }
 
+// Format borrower data for Zapier/Arive compatibility
+function formatBorrowerForZapier(b, calculations) {
+  // Format date to YYYY-MM-DD
+  const formatDate = (date) => {
+    if (!date) return '';
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    // Try to parse and format
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    return d.toISOString().split('T')[0];
+  };
+
+  // Map military status to Arive format
+  const mapMilitaryStatus = (status) => {
+    const map = {
+      'None': null,
+      'Active Duty': 'Active Duty',
+      'Veteran': 'Veteran',
+      'Reserve/National Guard': 'Reserve National Guard Never Activated'
+    };
+    return map[status] || null;
+  };
+
+  // Map home buying stage to Arive format
+  const mapHomeBuyingStage = (stage) => {
+    const map = {
+      'Just Getting Started': 'GETTING_STARTED',
+      'Making Offers': 'MAKING_OFFERS',
+      'Found a House/Offer Pending': 'OFFER_PENDING',
+      'Under Contract': 'UNDER_CONTRACT'
+    };
+    return map[stage] || 'GETTING_STARTED';
+  };
+
+  // Map years since bankruptcy/foreclosure
+  const mapYearsSince = (value) => {
+    if (!value || value === 'Never') return null;
+    if (value === 'Within 2 years' || value === 'Within 3 years') return 1;
+    if (value === '2+ years ago') return 3;
+    if (value === '3+ years ago') return 4;
+    return null;
+  };
+
+  return {
+    ...b,
+    calculations,
+    // Formatted fields for Arive
+    zapier: {
+      // Boolean conversions
+      first_time_homebuyer: b.first_time_homebuyer ? true : false,
+      has_coborrower: b.has_coborrower ? true : false,
+      currently_owning_home: b.first_time_homebuyer ? false : true,
+      planning_to_sell_home: b.planning_to_sell_home ? true : false,
+
+      // Date formatting
+      birth_date: formatDate(b.date_of_birth),
+      co_birth_date: formatDate(b.co_date_of_birth),
+
+      // Military status
+      military_service_type: mapMilitaryStatus(b.military_status),
+      co_military_service_type: mapMilitaryStatus(b.co_military_status),
+
+      // Home buying stage
+      home_buying_stage: mapHomeBuyingStage(b.home_buying_stage),
+
+      // Years since events
+      years_since_bankruptcy: mapYearsSince(b.bankruptcy),
+      years_since_foreclosure: mapYearsSince(b.foreclosure),
+
+      // Subject property TBD indicator
+      subject_property_tbd: !b.subject_property_street,
+
+      // Occupancy type mapping
+      occupancy_type: b.current_housing || 'Rent',
+
+      // Property value (works for both purchase and refi)
+      property_value: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price
+    }
+  };
+}
+
 // Get all borrowers ready for export (for Zapier polling trigger)
 router.get('/zapier/borrowers', apiKeyAuth, (req, res) => {
   const database = db.getDb();
@@ -46,7 +128,7 @@ router.get('/zapier/borrowers', apiKeyAuth, (req, res) => {
     b.debts = JSON.parse(b.debts || '[]');
 
     const calculations = calculateBorrowerMetrics(b);
-    return { ...b, calculations };
+    return formatBorrowerForZapier(b, calculations);
   });
 
   res.json(results);
@@ -70,7 +152,7 @@ router.get('/zapier/borrower/:id', apiKeyAuth, (req, res) => {
 
   const calculations = calculateBorrowerMetrics(borrower);
 
-  res.json({ borrower, calculations });
+  res.json(formatBorrowerForZapier(borrower, calculations));
 });
 
 // Get MISMO XML for a borrower (for Zapier to send to Arive)

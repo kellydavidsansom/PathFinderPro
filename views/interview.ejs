@@ -122,6 +122,45 @@
               <button type="button" class="toggle-btn <%= !borrower.first_time_homebuyer ? 'active' : '' %>" data-field="first_time_homebuyer" data-value="0">No</button>
             </div>
           </div>
+          <div class="form-group">
+            <label>Military/Veteran Status</label>
+            <select name="military_status" data-autosave>
+              <option value="None" <%= borrower.military_status === 'None' || !borrower.military_status ? 'selected' : '' %>>None</option>
+              <option value="Active Duty" <%= borrower.military_status === 'Active Duty' ? 'selected' : '' %>>Active Duty</option>
+              <option value="Veteran" <%= borrower.military_status === 'Veteran' ? 'selected' : '' %>>Veteran</option>
+              <option value="Reserve/National Guard" <%= borrower.military_status === 'Reserve/National Guard' ? 'selected' : '' %>>Reserve/National Guard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Employment Type</label>
+            <select name="employment_type" data-autosave>
+              <option value="">Select...</option>
+              <option value="Employed" <%= borrower.employment_type === 'Employed' ? 'selected' : '' %>>Employed</option>
+              <option value="Self-Employed" <%= borrower.employment_type === 'Self-Employed' ? 'selected' : '' %>>Self-Employed</option>
+              <option value="Retired" <%= borrower.employment_type === 'Retired' ? 'selected' : '' %>>Retired</option>
+              <option value="Active Military Duty" <%= borrower.employment_type === 'Active Military Duty' ? 'selected' : '' %>>Active Military Duty</option>
+              <option value="Other" <%= borrower.employment_type === 'Other' ? 'selected' : '' %>>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Current Housing</label>
+            <select name="current_housing" id="currentHousing" data-autosave>
+              <option value="Rent" <%= borrower.current_housing === 'Rent' || !borrower.current_housing ? 'selected' : '' %>>Rent</option>
+              <option value="Own" <%= borrower.current_housing === 'Own' ? 'selected' : '' %>>Own</option>
+              <option value="Living Rent Free" <%= borrower.current_housing === 'Living Rent Free' ? 'selected' : '' %>>Living Rent Free</option>
+            </select>
+          </div>
+          <div class="form-group" id="monthlyRentGroup" class="<%= borrower.current_housing === 'Rent' || !borrower.current_housing ? '' : 'hidden' %>">
+            <label>Monthly Rent</label>
+            <input type="number" name="monthly_rent" value="<%= borrower.monthly_rent || '' %>" placeholder="$0" data-autosave>
+          </div>
+          <div class="form-group" id="planningToSellGroup" class="<%= borrower.current_housing === 'Own' ? '' : 'hidden' %>">
+            <label>Planning to Sell Before Buying?</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn <%= borrower.planning_to_sell_home ? 'active' : '' %>" data-field="planning_to_sell_home" data-value="1">Yes</button>
+              <button type="button" class="toggle-btn <%= !borrower.planning_to_sell_home ? 'active' : '' %>" data-field="planning_to_sell_home" data-value="0">No</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -203,6 +242,26 @@
                 <option value="US Citizen" <%= borrower.co_citizenship_status === 'US Citizen' ? 'selected' : '' %>>US Citizen</option>
                 <option value="Permanent Resident" <%= borrower.co_citizenship_status === 'Permanent Resident' ? 'selected' : '' %>>Permanent Resident</option>
                 <option value="Non-Permanent Resident" <%= borrower.co_citizenship_status === 'Non-Permanent Resident' ? 'selected' : '' %>>Non-Permanent Resident</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Military/Veteran Status</label>
+              <select name="co_military_status" data-autosave>
+                <option value="None" <%= borrower.co_military_status === 'None' || !borrower.co_military_status ? 'selected' : '' %>>None</option>
+                <option value="Active Duty" <%= borrower.co_military_status === 'Active Duty' ? 'selected' : '' %>>Active Duty</option>
+                <option value="Veteran" <%= borrower.co_military_status === 'Veteran' ? 'selected' : '' %>>Veteran</option>
+                <option value="Reserve/National Guard" <%= borrower.co_military_status === 'Reserve/National Guard' ? 'selected' : '' %>>Reserve/National Guard</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Employment Type</label>
+              <select name="co_employment_type" data-autosave>
+                <option value="">Select...</option>
+                <option value="Employed" <%= borrower.co_employment_type === 'Employed' ? 'selected' : '' %>>Employed</option>
+                <option value="Self-Employed" <%= borrower.co_employment_type === 'Self-Employed' ? 'selected' : '' %>>Self-Employed</option>
+                <option value="Retired" <%= borrower.co_employment_type === 'Retired' ? 'selected' : '' %>>Retired</option>
+                <option value="Active Military Duty" <%= borrower.co_employment_type === 'Active Military Duty' ? 'selected' : '' %>>Active Military Duty</option>
+                <option value="Other" <%= borrower.co_employment_type === 'Other' ? 'selected' : '' %>>Other</option>
               </select>
             </div>
           </div>
@@ -486,9 +545,44 @@
               </div>
             </div>
 
+            <h4>Subject Property Address (if known)</h4>
+            <div class="form-grid">
+              <div class="form-group col-span-2">
+                <label>Street Address</label>
+                <input type="text" name="subject_property_street" value="<%= borrower.subject_property_street || '' %>" placeholder="Leave blank if TBD" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>City</label>
+                <input type="text" name="subject_property_city" value="<%= borrower.subject_property_city || '' %>" data-autosave>
+              </div>
+              <div class="form-group">
+                <label>ZIP</label>
+                <input type="text" name="subject_property_zip" value="<%= borrower.subject_property_zip || '' %>" maxlength="10" data-autosave>
+              </div>
+            </div>
+
             <h4>Property Information</h4>
 
             <div class="form-grid">
+              <div class="form-group">
+                <label>Home Buying Stage</label>
+                <select name="home_buying_stage" data-autosave>
+                  <option value="Just Getting Started" <%= borrower.home_buying_stage === 'Just Getting Started' || !borrower.home_buying_stage ? 'selected' : '' %>>Just Getting Started</option>
+                  <option value="Making Offers" <%= borrower.home_buying_stage === 'Making Offers' ? 'selected' : '' %>>Making Offers</option>
+                  <option value="Found a House/Offer Pending" <%= borrower.home_buying_stage === 'Found a House/Offer Pending' ? 'selected' : '' %>>Found a House/Offer Pending</option>
+                  <option value="Under Contract" <%= borrower.home_buying_stage === 'Under Contract' ? 'selected' : '' %>>Under Contract</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Preferred Loan Type</label>
+                <select name="preferred_loan_type" data-autosave>
+                  <option value="Not Sure" <%= borrower.preferred_loan_type === 'Not Sure' || !borrower.preferred_loan_type ? 'selected' : '' %>>Not Sure</option>
+                  <option value="Conventional" <%= borrower.preferred_loan_type === 'Conventional' ? 'selected' : '' %>>Conventional</option>
+                  <option value="FHA" <%= borrower.preferred_loan_type === 'FHA' ? 'selected' : '' %>>FHA</option>
+                  <option value="VA" <%= borrower.preferred_loan_type === 'VA' ? 'selected' : '' %>>VA</option>
+                  <option value="USDA" <%= borrower.preferred_loan_type === 'USDA' ? 'selected' : '' %>>USDA</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label>Property Type</label>
                 <select name="property_type" data-autosave>

@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAutoSave();
   initToggleButtons();
   initCoBorrowerToggle();
+  initCurrentHousingToggle();
   initPayTypeToggles();
   initAssetListeners();
   initDebtListeners();
@@ -164,6 +165,30 @@ function toggleCoBorrowerFields(show) {
 function toggleCollectionsAmount(show) {
   const group = document.getElementById('collectionsAmountGroup');
   if (group) group.classList.toggle('hidden', !show);
+}
+
+// Current Housing Toggle (Own/Rent/Living Rent Free)
+function initCurrentHousingToggle() {
+  const housingSelect = document.getElementById('currentHousing');
+  if (housingSelect) {
+    housingSelect.addEventListener('change', () => {
+      toggleCurrentHousingFields(housingSelect.value);
+    });
+    // Initialize on load
+    toggleCurrentHousingFields(housingSelect.value);
+  }
+}
+
+function toggleCurrentHousingFields(housing) {
+  const monthlyRentGroup = document.getElementById('monthlyRentGroup');
+  const planningToSellGroup = document.getElementById('planningToSellGroup');
+
+  if (monthlyRentGroup) {
+    monthlyRentGroup.classList.toggle('hidden', housing !== 'Rent');
+  }
+  if (planningToSellGroup) {
+    planningToSellGroup.classList.toggle('hidden', housing !== 'Own');
+  }
 }
 
 // Pay Type Toggles (Salary/Hourly)

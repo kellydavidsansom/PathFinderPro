@@ -62,6 +62,11 @@ function initialize() {
       dependents INTEGER DEFAULT 0,
       citizenship_status TEXT,
       first_time_homebuyer INTEGER DEFAULT 0,
+      military_status TEXT DEFAULT 'None',
+      employment_type TEXT,
+      current_housing TEXT DEFAULT 'Rent',
+      monthly_rent REAL,
+      planning_to_sell_home INTEGER DEFAULT 0,
 
       -- Co-Borrower Info
       has_coborrower INTEGER DEFAULT 0,
@@ -78,6 +83,8 @@ function initialize() {
       co_marital_status TEXT,
       co_dependents INTEGER DEFAULT 0,
       co_citizenship_status TEXT,
+      co_military_status TEXT DEFAULT 'None',
+      co_employment_type TEXT,
 
       -- Income (JSON arrays for multiple employers/sources)
       employers JSON DEFAULT '[]',
@@ -104,6 +111,11 @@ function initialize() {
       hoa_monthly REAL,
       insurance_annual REAL,
       interest_rate REAL DEFAULT 7.0,
+      subject_property_street TEXT,
+      subject_property_city TEXT,
+      subject_property_zip TEXT,
+      home_buying_stage TEXT DEFAULT 'Just Getting Started',
+      preferred_loan_type TEXT DEFAULT 'Not Sure',
 
       -- Refinance Info
       refinance_type TEXT,
