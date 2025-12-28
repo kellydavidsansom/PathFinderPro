@@ -308,30 +308,64 @@ router.delete('/zapier/webhooks/:id', apiKeyAuth, (req, res) => {
 // Internal endpoint for "Send to Arive" button (no API key required)
 router.post('/borrower/:id/send-to-arive', async (req, res) => {
   const database = db.getDb();
-
-  // Update status
-  database.prepare(`
-    UPDATE borrowers
-    SET status = 'qualified', updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(req.params.id);
+  const ariveService = require('../services/arive');
 
   // Get borrower data
   const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
 
-  if (borrower) {
-    borrower.employers = JSON.parse(borrower.employers || '[]');
-    borrower.other_income = JSON.parse(borrower.other_income || '[]');
-    borrower.assets = JSON.parse(borrower.assets || '[]');
-    borrower.debts = JSON.parse(borrower.debts || '[]');
-
-    const calculations = calculateBorrowerMetrics(borrower);
-
-    // Trigger webhooks
-    await triggerWebhooks('borrower.qualified', { borrower, calculations });
+  if (!borrower) {
+    return res.status(404).json({ success: false, error: 'Borrower not found' });
   }
 
-  res.json({ success: true, message: 'Borrower marked as qualified' });
+  // Parse JSON fields
+  borrower.employers = JSON.parse(borrower.employers || '[]');
+  borrower.other_income = JSON.parse(borrower.other_income || '[]');
+  borrower.co_employers = JSON.parse(borrower.co_employers || '[]');
+  borrower.co_other_income = JSON.parse(borrower.co_other_income || '[]');
+  borrower.assets = JSON.parse(borrower.assets || '[]');
+  borrower.debts = JSON.parse(borrower.debts || '[]');
+
+  const calculations = calculateBorrowerMetrics(borrower);
+
+  try {
+    // Send directly to Arive API
+    const ariveResponse = await ariveService.createLead(borrower, calculations);
+
+    // Update status to exported
+    database.prepare(`
+      UPDATE borrowers
+      SET status = 'exported', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(req.params.id);
+
+    console.log('Lead sent to Arive:', ariveResponse);
+
+    res.json({
+      success: true,
+      message: 'Lead sent to Arive successfully',
+      ariveLeadId: ariveResponse.ariveLeadId,
+      deepLinkURL: ariveResponse.deepLinkURL
+    });
+
+  } catch (error) {
+    console.error('Arive API Error:', error.message);
+
+    // Fall back to marking as qualified (for Zapier polling)
+    database.prepare(`
+      UPDATE borrowers
+      SET status = 'qualified', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(req.params.id);
+
+    // Trigger webhooks as fallback
+    await triggerWebhooks('borrower.qualified', { borrower, calculations });
+
+    res.json({
+      success: true,
+      message: 'Marked as qualified (Arive direct send failed: ' + error.message + ')',
+      fallback: true
+    });
+  }
 });
 
 // Mark borrower as qualified via Zapier (requires API key)
