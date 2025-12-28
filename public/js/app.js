@@ -664,6 +664,9 @@ function initPropertyCalculations() {
 
   // Initialize loan purpose toggle state
   initLoanPurposeToggle();
+
+  // Run initial calculation on page load
+  setTimeout(() => updatePropertyCalculations(), 100);
 }
 
 // Initialize loan purpose toggle on page load
@@ -695,7 +698,7 @@ function updatePropertyCalculations() {
     const price = parseFloat(document.querySelector('[name="purchase_price"]')?.value) || 0;
     const downPayment = parseFloat(document.querySelector('[name="down_payment_amount"]')?.value) || 0;
     propertyValue = price;
-    loanAmount = price - downPayment;
+    loanAmount = Math.max(0, price - downPayment); // Prevent negative loan amounts
     ltv = price > 0 ? (loanAmount / price) * 100 : 0;
   }
 
