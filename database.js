@@ -115,7 +115,7 @@ function initialize() {
       subject_property_city TEXT,
       subject_property_zip TEXT,
       home_buying_stage TEXT DEFAULT 'Just Getting Started',
-      preferred_loan_type TEXT DEFAULT 'Not Sure',
+      preferred_loan_type TEXT,
 
       -- Refinance Info
       refinance_type TEXT,
@@ -201,7 +201,7 @@ function initialize() {
   addColumnIfNotExists('borrowers', 'subject_property_city', 'TEXT');
   addColumnIfNotExists('borrowers', 'subject_property_zip', 'TEXT');
   addColumnIfNotExists('borrowers', 'home_buying_stage', "TEXT DEFAULT 'Just Getting Started'");
-  addColumnIfNotExists('borrowers', 'preferred_loan_type', "TEXT DEFAULT 'Not Sure'");
+  addColumnIfNotExists('borrowers', 'preferred_loan_type', "TEXT");
 
   // Refinance fields (if not already added)
   addColumnIfNotExists('borrowers', 'loan_purpose', "TEXT DEFAULT 'Purchase'");

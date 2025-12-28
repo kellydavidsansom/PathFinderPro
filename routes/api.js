@@ -101,7 +101,19 @@ function formatBorrowerForZapier(b, calculations) {
       occupancy_type: b.current_housing || 'Rent',
 
       // Property value (works for both purchase and refi)
-      property_value: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price
+      property_value: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price,
+
+      // Arive-compatible IDs (pass through directly since form now stores Arive IDs)
+      mortgage_type: b.preferred_loan_type || null,  // Conventional, VA, FHA, USDARuralDevelopment, NonQM
+      property_type: b.property_type || null,  // SINGLE_FAMILY_DETACHED, TWO_UNIT, etc.
+      employment_type: b.employment_type || null,  // employed, self-employed, retired, active military duty, unemployed
+      co_employment_type: b.co_employment_type || null,
+
+      // Loan amount (ensure positive)
+      base_loan_amount: Math.max(0, calculations.loanAmount || 0),
+
+      // Monthly rent (only if renting)
+      monthly_rent: b.current_housing === 'Rent' ? (b.monthly_rent || 0) : null
     }
   };
 }

@@ -135,11 +135,11 @@
             <label>Employment Type</label>
             <select name="employment_type" data-autosave>
               <option value="">Select...</option>
-              <option value="Employed" <%= borrower.employment_type === 'Employed' ? 'selected' : '' %>>Employed</option>
-              <option value="Self-Employed" <%= borrower.employment_type === 'Self-Employed' ? 'selected' : '' %>>Self-Employed</option>
-              <option value="Retired" <%= borrower.employment_type === 'Retired' ? 'selected' : '' %>>Retired</option>
-              <option value="Active Military Duty" <%= borrower.employment_type === 'Active Military Duty' ? 'selected' : '' %>>Active Military Duty</option>
-              <option value="Other" <%= borrower.employment_type === 'Other' ? 'selected' : '' %>>Other</option>
+              <option value="employed" <%= borrower.employment_type === 'employed' ? 'selected' : '' %>>Employed</option>
+              <option value="self-employed" <%= borrower.employment_type === 'self-employed' ? 'selected' : '' %>>Self-Employed</option>
+              <option value="retired" <%= borrower.employment_type === 'retired' ? 'selected' : '' %>>Retired</option>
+              <option value="active military duty" <%= borrower.employment_type === 'active military duty' ? 'selected' : '' %>>Active Military Duty</option>
+              <option value="unemployed" <%= borrower.employment_type === 'unemployed' ? 'selected' : '' %>>Unemployed</option>
             </select>
           </div>
           <div class="form-group">
@@ -257,11 +257,11 @@
               <label>Employment Type</label>
               <select name="co_employment_type" data-autosave>
                 <option value="">Select...</option>
-                <option value="Employed" <%= borrower.co_employment_type === 'Employed' ? 'selected' : '' %>>Employed</option>
-                <option value="Self-Employed" <%= borrower.co_employment_type === 'Self-Employed' ? 'selected' : '' %>>Self-Employed</option>
-                <option value="Retired" <%= borrower.co_employment_type === 'Retired' ? 'selected' : '' %>>Retired</option>
-                <option value="Active Military Duty" <%= borrower.co_employment_type === 'Active Military Duty' ? 'selected' : '' %>>Active Military Duty</option>
-                <option value="Other" <%= borrower.co_employment_type === 'Other' ? 'selected' : '' %>>Other</option>
+                <option value="employed" <%= borrower.co_employment_type === 'employed' ? 'selected' : '' %>>Employed</option>
+                <option value="self-employed" <%= borrower.co_employment_type === 'self-employed' ? 'selected' : '' %>>Self-Employed</option>
+                <option value="retired" <%= borrower.co_employment_type === 'retired' ? 'selected' : '' %>>Retired</option>
+                <option value="active military duty" <%= borrower.co_employment_type === 'active military duty' ? 'selected' : '' %>>Active Military Duty</option>
+                <option value="unemployed" <%= borrower.co_employment_type === 'unemployed' ? 'selected' : '' %>>Unemployed</option>
               </select>
             </div>
           </div>
@@ -576,21 +576,29 @@
               <div class="form-group">
                 <label>Preferred Loan Type</label>
                 <select name="preferred_loan_type" data-autosave>
-                  <option value="Not Sure" <%= borrower.preferred_loan_type === 'Not Sure' || !borrower.preferred_loan_type ? 'selected' : '' %>>Not Sure</option>
+                  <option value="" <%= !borrower.preferred_loan_type ? 'selected' : '' %>>Not Sure</option>
                   <option value="Conventional" <%= borrower.preferred_loan_type === 'Conventional' ? 'selected' : '' %>>Conventional</option>
                   <option value="FHA" <%= borrower.preferred_loan_type === 'FHA' ? 'selected' : '' %>>FHA</option>
                   <option value="VA" <%= borrower.preferred_loan_type === 'VA' ? 'selected' : '' %>>VA</option>
-                  <option value="USDA" <%= borrower.preferred_loan_type === 'USDA' ? 'selected' : '' %>>USDA</option>
+                  <option value="USDARuralDevelopment" <%= borrower.preferred_loan_type === 'USDARuralDevelopment' ? 'selected' : '' %>>USDA Rural Development</option>
+                  <option value="NonQM" <%= borrower.preferred_loan_type === 'NonQM' ? 'selected' : '' %>>Non-QM</option>
                 </select>
               </div>
               <div class="form-group">
                 <label>Property Type</label>
                 <select name="property_type" data-autosave>
                   <option value="">Select...</option>
-                  <option value="Single Family" <%= borrower.property_type === 'Single Family' ? 'selected' : '' %>>Single Family</option>
-                  <option value="Condo" <%= borrower.property_type === 'Condo' ? 'selected' : '' %>>Condo</option>
-                  <option value="Townhome" <%= borrower.property_type === 'Townhome' ? 'selected' : '' %>>Townhome</option>
-                  <option value="2-4 Unit" <%= borrower.property_type === '2-4 Unit' ? 'selected' : '' %>>2-4 Unit</option>
+                  <option value="SINGLE_FAMILY_DETACHED" <%= borrower.property_type === 'SINGLE_FAMILY_DETACHED' ? 'selected' : '' %>>Single Family Detached</option>
+                  <option value="SINGLE_FAMILY_ATTACHED" <%= borrower.property_type === 'SINGLE_FAMILY_ATTACHED' ? 'selected' : '' %>>Single Family Attached</option>
+                  <option value="TOWNHOUSE" <%= borrower.property_type === 'TOWNHOUSE' ? 'selected' : '' %>>Townhouse</option>
+                  <option value="CONDO_UNDER_5_STORIES" <%= borrower.property_type === 'CONDO_UNDER_5_STORIES' ? 'selected' : '' %>>Condo (Under 5 Stories)</option>
+                  <option value="CONDO_5_TO_8_STORIES" <%= borrower.property_type === 'CONDO_5_TO_8_STORIES' ? 'selected' : '' %>>Condo (5-8 Stories)</option>
+                  <option value="CONDO_HIGH_RISE" <%= borrower.property_type === 'CONDO_HIGH_RISE' ? 'selected' : '' %>>Condo High Rise</option>
+                  <option value="TWO_UNIT" <%= borrower.property_type === 'TWO_UNIT' ? 'selected' : '' %>>2 Unit</option>
+                  <option value="THREE_UNIT" <%= borrower.property_type === 'THREE_UNIT' ? 'selected' : '' %>>3 Unit</option>
+                  <option value="FOUR_UNIT" <%= borrower.property_type === 'FOUR_UNIT' ? 'selected' : '' %>>4 Unit</option>
+                  <option value="MANUFACTURED_SINGLE_WIDE" <%= borrower.property_type === 'MANUFACTURED_SINGLE_WIDE' ? 'selected' : '' %>>Manufactured Single Wide</option>
+                  <option value="MANUFACTURED_DOUBLE_WIDE" <%= borrower.property_type === 'MANUFACTURED_DOUBLE_WIDE' ? 'selected' : '' %>>Manufactured Double Wide</option>
                 </select>
               </div>
               <div class="form-group">
