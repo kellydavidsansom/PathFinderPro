@@ -1066,6 +1066,80 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
 }
 
+/* Adjusted Indicator */
+.adjusted-indicator {
+  font-size: 0.7rem;
+  background: var(--warning);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+/* Quick Adjust Section */
+.quick-adjust-section {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.quick-adjust-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.quick-adjust-header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quick-adjust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+.quick-adjust-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quick-adjust-item label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.quick-adjust-item input {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: white;
+}
+
+.quick-adjust-item input:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 2px rgba(184, 196, 184, 0.3);
+}
+
+@media (max-width: 600px) {
+  .quick-adjust-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Claude Analysis */
 .ai-analysis {
   background: var(--sand);
@@ -1267,6 +1341,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .analysis-footer-company .utah-mortgage {
   color: #8f8c83;
+}
+
+.analysis-footer-contact {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.analysis-footer-contact a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.analysis-footer-contact a:hover {
+  text-decoration: underline;
 }
 
 .analysis-footer-address {

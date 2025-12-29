@@ -605,54 +605,180 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
   try {
     const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
+
+    // Build filename: PathFinderPro-ClearPathUtah-Lastname-Firstname.pdf
+    const lastName = (borrower.last_name || 'Client').replace(/[^a-zA-Z]/g, '');
+    const firstName = (borrower.first_name || '').replace(/[^a-zA-Z]/g, '');
+    const filename = `PathFinderPro-ClearPathUtah-${lastName}-${firstName}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="PathFinder_Analysis_${borrower.last_name || 'Borrower'}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     doc.pipe(res);
 
-    // Header with logo placeholder (text-based for simplicity)
+    // Try to parse as JSON (new format)
+    let parsed = null;
+    try {
+      parsed = JSON.parse(borrower.ai_analysis);
+    } catch (e) {
+      parsed = null;
+    }
+
+    // Header
     doc.fontSize(24).font('Helvetica-Bold');
     doc.fillColor('#000000').text('PATH', { continued: true });
     doc.fillColor('#f90000').text('FINDER', { continued: true });
     doc.fillColor('#000000').text(' PRO');
-
+    doc.fontSize(11).fillColor('#666666').font('Helvetica');
+    doc.text('by ClearPath Utah Mortgage');
     doc.moveDown(0.5);
-    doc.fontSize(12).fillColor('#666666').text('Loan Qualification Analysis Report');
+
+    // Agent info
+    doc.fontSize(10).fillColor('#333333');
+    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508 | (801) 891-1846 | clearpathutah.com | hello@clearpathutah.com');
     doc.moveDown();
 
-    // Borrower info
-    doc.fontSize(14).fillColor('#000000').font('Helvetica-Bold');
-    doc.text(`Borrower: ${borrower.first_name || ''} ${borrower.last_name || ''}`);
-    doc.fontSize(10).fillColor('#666666').font('Helvetica');
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`);
+    // Divider
+    doc.strokeColor('#8FA38F').lineWidth(2);
+    doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke();
     doc.moveDown();
 
-    // Divider line
-    doc.strokeColor('#e0e0e0').lineWidth(1);
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.moveDown();
+    if (parsed && parsed.clientLetter) {
+      const letter = parsed.clientLetter;
 
-    // Analysis content
-    doc.fontSize(11).fillColor('#333333').font('Helvetica');
+      // Format phone number
+      let phone = '';
+      if (letter.greeting) {
+        const parts = letter.greeting.split('\n');
+        if (parts[1]) {
+          const digits = parts[1].replace(/\D/g, '');
+          if (digits.length === 10) {
+            phone = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+          } else {
+            phone = parts[1];
+          }
+        }
+        // Greeting
+        doc.fontSize(12).fillColor('#333333').font('Helvetica-Bold');
+        doc.text(parts[0] || '');
+        if (phone) {
+          doc.fontSize(10).fillColor('#666666').font('Helvetica');
+          doc.text(phone);
+        }
+        doc.moveDown();
+      }
 
-    // Clean up the analysis text for PDF
-    const cleanAnalysis = borrower.ai_analysis
-      .replace(/\*\*/g, '')
-      .replace(/###/g, '')
-      .replace(/##/g, '')
-      .replace(/#/g, '');
+      // Introduction
+      if (letter.introduction) {
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        doc.text(letter.introduction, { lineGap: 4 });
+        doc.moveDown();
+      }
 
-    doc.text(cleanAnalysis, {
-      align: 'left',
-      lineGap: 4
-    });
+      // YOUR HIGHLIGHTS
+      if (letter.highlights && letter.highlights.length) {
+        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text('YOUR HIGHLIGHTS');
+        doc.strokeColor('#8FA38F').lineWidth(1);
+        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        letter.highlights.forEach(item => {
+          doc.text(`• ${item}`, { lineGap: 3 });
+        });
+        doc.moveDown();
+      }
+
+      // ROOM FOR IMPROVEMENT
+      if (letter.improvements && letter.improvements.length) {
+        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text('ROOM FOR IMPROVEMENT');
+        doc.strokeColor('#8FA38F').lineWidth(1);
+        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        letter.improvements.forEach(item => {
+          doc.text(`• ${item}`, { lineGap: 3 });
+        });
+        doc.moveDown();
+      }
+
+      // OPTIONS TO STRENGTHEN YOUR PROFILE
+      if (letter.options && letter.options.length) {
+        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text('OPTIONS TO STRENGTHEN YOUR PROFILE');
+        doc.strokeColor('#8FA38F').lineWidth(1);
+        doc.moveTo(50, doc.y + 2).lineTo(280, doc.y + 2).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        letter.options.forEach((item, i) => {
+          doc.text(`${i + 1}. ${item}`, { lineGap: 3 });
+        });
+        doc.moveDown();
+      }
+
+      // YOUR CLEARPATH FORWARD
+      if (letter.clearpath) {
+        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text('YOUR CLEARPATH FORWARD');
+        doc.strokeColor('#8FA38F').lineWidth(1);
+        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
+        doc.moveDown(0.5);
+        // Highlighted box
+        const boxY = doc.y;
+        doc.rect(50, boxY, 512, 60).fill('#f5f7f5');
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        doc.text(letter.clearpath, 60, boxY + 10, { width: 492, lineGap: 4 });
+        doc.y = boxY + 70;
+        doc.moveDown();
+      }
+
+      // Closing
+      if (letter.closing) {
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        doc.text(letter.closing, { lineGap: 4 });
+        doc.moveDown();
+      }
+
+      // Signature
+      if (letter.signature) {
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        const sigLines = letter.signature.split('\n');
+        sigLines.forEach(line => doc.text(line));
+        doc.moveDown();
+      }
+    } else {
+      // Old format - just render the text
+      const cleanAnalysis = borrower.ai_analysis
+        .replace(/\*\*/g, '')
+        .replace(/###/g, '')
+        .replace(/##/g, '')
+        .replace(/#/g, '');
+
+      doc.fontSize(11).fillColor('#333333').font('Helvetica');
+      doc.text(cleanAnalysis, { align: 'left', lineGap: 4 });
+    }
 
     // Footer
     doc.moveDown(2);
-    doc.fontSize(9).fillColor('#999999');
-    doc.text('ClearPath Utah Mortgage | Kelly (801) 891-1846 | hello@clearpathutah.com', {
+    doc.strokeColor('#e0e0e0').lineWidth(1);
+    doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke();
+    doc.moveDown(0.5);
+
+    // CLEARPATH UTAH MORTGAGE with colors
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.fillColor('#8f8c83').text('CLEAR', { continued: true });
+    doc.fillColor('#b9b399').text('PATH', { continued: true });
+    doc.fillColor('#8f8c83').text(' UTAH MORTGAGE', { continued: false });
+
+    doc.fontSize(9).fillColor('#666666').font('Helvetica');
+    doc.text('(801) 891-1846 | hello@clearpathutah.com');
+    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING');
+    doc.moveDown(0.5);
+    doc.fontSize(8).fillColor('#999999');
+    doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.', {
+      width: 512,
       align: 'center'
     });
 

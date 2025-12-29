@@ -1295,8 +1295,7 @@ function renderClientLetter(letter) {
         </div>
         <div class="analysis-footer-center">
           <div class="analysis-footer-company"><span class="clear">CLEAR</span><span class="path-text">PATH</span> <span class="utah-mortgage">UTAH MORTGAGE</span></div>
-          <div class="analysis-footer-address">
-            10168 South 2505 East, Sandy, UT 84092<br>
+          <div class="analysis-footer-contact">
             <a href="tel:8018911846">(801) 891-1846</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
           </div>
           <div class="analysis-footer-nmls">NMLS #2510508 | FAIR LENDER | FAIR HOUSING</div>
@@ -1658,3 +1657,149 @@ document.querySelectorAll('.knowledge-tab').forEach(tab => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeKnowledgeModal();
 });
+
+// Quick Adjustments for Max Purchase Power
+let originalPropertyValues = null;
+
+function getOriginalPropertyValues() {
+  return {
+    homePrice: parseFloat(document.querySelector('[name="purchase_price"]')?.value) || 0,
+    downPaymentPct: parseFloat(document.querySelector('[name="down_payment_percent"]')?.value) || 3,
+    interestRate: parseFloat(document.querySelector('[name="interest_rate"]')?.value) || 7.0,
+    taxes: parseFloat(document.querySelector('[name="property_taxes_annual"]')?.value) || 0,
+    hoi: parseFloat(document.querySelector('[name="insurance_annual"]')?.value) || 0,
+    hoa: parseFloat(document.querySelector('[name="hoa_monthly"]')?.value) || 0
+  };
+}
+
+function applyQuickAdjustments() {
+  // Store original values on first adjustment
+  if (!originalPropertyValues) {
+    originalPropertyValues = getOriginalPropertyValues();
+  }
+
+  // Get adjustment values (use original if empty)
+  const adjustHomePrice = document.getElementById('adjustHomePrice').value;
+  const adjustDownPaymentPct = document.getElementById('adjustDownPaymentPct').value;
+  const adjustInterestRate = document.getElementById('adjustInterestRate').value;
+  const adjustTaxes = document.getElementById('adjustTaxes').value;
+  const adjustHOI = document.getElementById('adjustHOI').value;
+  const adjustHOA = document.getElementById('adjustHOA').value;
+
+  // Check if any adjustments are made
+  const hasAdjustments = adjustHomePrice || adjustDownPaymentPct || adjustInterestRate || adjustTaxes || adjustHOI || adjustHOA;
+
+  if (!hasAdjustments) {
+    // No adjustments, hide indicator and reset button
+    document.getElementById('adjustedIndicator').style.display = 'none';
+    document.getElementById('resetAdjustmentsBtn').style.display = 'none';
+    updateAllCalculations();
+    return;
+  }
+
+  // Show indicator and reset button
+  document.getElementById('adjustedIndicator').style.display = 'inline';
+  document.getElementById('resetAdjustmentsBtn').style.display = 'inline-block';
+
+  // Use adjusted values or fallback to original
+  const homePrice = adjustHomePrice ? parseFloat(adjustHomePrice) : originalPropertyValues.homePrice;
+  const downPaymentPct = adjustDownPaymentPct ? parseFloat(adjustDownPaymentPct) : originalPropertyValues.downPaymentPct;
+  const rate = adjustInterestRate ? parseFloat(adjustInterestRate) : originalPropertyValues.interestRate;
+  const taxesAnnual = adjustTaxes ? parseFloat(adjustTaxes) : originalPropertyValues.taxes;
+  const hoiAnnual = adjustHOI ? parseFloat(adjustHOI) : originalPropertyValues.hoi;
+  const hoaMonthly = adjustHOA ? parseFloat(adjustHOA) : originalPropertyValues.hoa;
+
+  // Calculate adjusted max purchase power
+  const monthlyIncome = getMonthlyIncome();
+  const monthlyDebts = getMonthlyDebts();
+
+  const power43 = calculateMaxPurchaseAdjusted(monthlyIncome, monthlyDebts, 43, rate, taxesAnnual, hoiAnnual, hoaMonthly, downPaymentPct);
+  const power45 = calculateMaxPurchaseAdjusted(monthlyIncome, monthlyDebts, 45, rate, taxesAnnual, hoiAnnual, hoaMonthly, downPaymentPct);
+  const power50 = calculateMaxPurchaseAdjusted(monthlyIncome, monthlyDebts, 50, rate, taxesAnnual, hoiAnnual, hoaMonthly, downPaymentPct);
+
+  // Update display
+  document.getElementById('maxPurchase43').textContent = formatCurrency(power43.price);
+  document.getElementById('maxPurchase45').textContent = formatCurrency(power45.price);
+  document.getElementById('maxPurchase50').textContent = formatCurrency(power50.price);
+  document.getElementById('piti43').textContent = 'PITI: ' + formatCurrency(power43.piti) + '/mo';
+  document.getElementById('piti45').textContent = 'PITI: ' + formatCurrency(power45.piti) + '/mo';
+  document.getElementById('piti50').textContent = 'PITI: ' + formatCurrency(power50.piti) + '/mo';
+
+  // Also update The Numbers card if home price is set
+  if (adjustHomePrice) {
+    const downPaymentAmt = homePrice * (downPaymentPct / 100);
+    const loanAmount = homePrice - downPaymentAmt;
+    const ltv = homePrice > 0 ? (loanAmount / homePrice) * 100 : 0;
+
+    // Calculate PITI for this home price
+    const monthlyRate = rate / 100 / 12;
+    const numPayments = 360;
+    let pi = 0;
+    if (loanAmount > 0 && monthlyRate > 0) {
+      pi = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
+    }
+    const monthlyTaxes = taxesAnnual / 12;
+    const monthlyInsurance = hoiAnnual / 12;
+    const totalPITI = pi + monthlyTaxes + monthlyInsurance + hoaMonthly;
+
+    document.getElementById('summaryLoanAmount').textContent = formatCurrency(loanAmount);
+    document.getElementById('summaryLTV').textContent = ltv.toFixed(1) + '%';
+    document.getElementById('summaryPITI').textContent = formatCurrency(totalPITI);
+
+    // Update DTI
+    const frontDTI = monthlyIncome > 0 ? (totalPITI / monthlyIncome) * 100 : 0;
+    const backDTI = monthlyIncome > 0 ? ((monthlyDebts + totalPITI) / monthlyIncome) * 100 : 0;
+    document.getElementById('summaryFrontDTI').textContent = frontDTI.toFixed(1) + '%';
+    document.getElementById('summaryBackDTI').textContent = backDTI.toFixed(1) + '%';
+
+    // Update cash to close
+    const closingCosts = loanAmount * 0.03;
+    const cashToClose = downPaymentAmt + closingCosts;
+    document.getElementById('summaryCashToClose').textContent = formatCurrency(cashToClose);
+  }
+}
+
+function calculateMaxPurchaseAdjusted(monthlyIncome, monthlyDebts, targetDTI, rate, taxesAnnual, insuranceAnnual, hoaMonthly, downPaymentPct) {
+  if (monthlyIncome <= 0) return { price: 0, piti: 0 };
+
+  const monthlyRate = rate / 100 / 12;
+  const numPayments = 360;
+
+  const maxTotalPayment = (monthlyIncome * targetDTI / 100) - monthlyDebts;
+  const monthlyTaxes = taxesAnnual / 12;
+  const monthlyInsurance = insuranceAnnual / 12;
+  const maxPI = maxTotalPayment - monthlyTaxes - monthlyInsurance - hoaMonthly;
+
+  if (maxPI <= 0 || monthlyRate <= 0) return { price: 0, piti: 0 };
+
+  const maxLoan = maxPI * (Math.pow(1 + monthlyRate, numPayments) - 1) / (monthlyRate * Math.pow(1 + monthlyRate, numPayments));
+
+  // Use adjusted down payment percentage
+  const downPaymentDecimal = (downPaymentPct || 3) / 100;
+  const maxPrice = maxLoan / (1 - downPaymentDecimal);
+
+  // Calculate PITI for this max purchase
+  const piti = maxPI + monthlyTaxes + monthlyInsurance + hoaMonthly;
+
+  return { price: maxPrice, piti: piti };
+}
+
+function resetAdjustments() {
+  // Clear all adjustment inputs
+  document.getElementById('adjustHomePrice').value = '';
+  document.getElementById('adjustDownPaymentPct').value = '';
+  document.getElementById('adjustInterestRate').value = '';
+  document.getElementById('adjustTaxes').value = '';
+  document.getElementById('adjustHOI').value = '';
+  document.getElementById('adjustHOA').value = '';
+
+  // Hide indicator and reset button
+  document.getElementById('adjustedIndicator').style.display = 'none';
+  document.getElementById('resetAdjustmentsBtn').style.display = 'none';
+
+  // Clear stored original values
+  originalPropertyValues = null;
+
+  // Recalculate with original property tab values
+  updateAllCalculations();
+}
