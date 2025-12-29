@@ -65,6 +65,15 @@ function initTabs() {
       updateAllCalculations();
     });
   });
+
+  // Check for hash in URL and open corresponding tab
+  const hash = window.location.hash.replace('#', '');
+  if (hash) {
+    const targetTab = document.querySelector(`.tab[data-tab="${hash}"]`);
+    if (targetTab) {
+      targetTab.click();
+    }
+  }
 }
 
 // Auto-save functionality
@@ -988,10 +997,10 @@ function updateAllCalculations() {
   const closingCosts = loanAmount * 0.03;
   const cashToClose = downPayment + closingCosts;
 
-  // Max purchase power
-  const maxPurchase43 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 43);
-  const maxPurchase45 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 45);
-  const maxPurchase50 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 50);
+  // Max purchase power (returns {price, piti})
+  const power43 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 43);
+  const power45 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 45);
+  const power50 = calculateMaxPurchase(monthlyIncome, monthlyDebts, 50);
 
   // Update summary tab
   const summaryMonthlyIncome = document.getElementById('summaryMonthlyIncome');
@@ -1007,6 +1016,9 @@ function updateAllCalculations() {
   const max43 = document.getElementById('maxPurchase43');
   const max45 = document.getElementById('maxPurchase45');
   const max50 = document.getElementById('maxPurchase50');
+  const piti43 = document.getElementById('piti43');
+  const piti45 = document.getElementById('piti45');
+  const piti50 = document.getElementById('piti50');
 
   if (summaryMonthlyIncome) summaryMonthlyIncome.textContent = formatCurrency(monthlyIncome);
   if (summaryMonthlyDebts) summaryMonthlyDebts.textContent = formatCurrency(monthlyDebts);
@@ -1021,13 +1033,16 @@ function updateAllCalculations() {
   const creditScore = document.querySelector('[name="credit_score"]')?.value;
   if (summaryCreditScore) summaryCreditScore.textContent = creditScore || '-';
 
-  if (max43) max43.textContent = formatCurrency(maxPurchase43);
-  if (max45) max45.textContent = formatCurrency(maxPurchase45);
-  if (max50) max50.textContent = formatCurrency(maxPurchase50);
+  if (max43) max43.textContent = formatCurrency(power43.price);
+  if (max45) max45.textContent = formatCurrency(power45.price);
+  if (max50) max50.textContent = formatCurrency(power50.price);
+  if (piti43) piti43.textContent = 'PITI: ' + formatCurrency(power43.piti) + '/mo';
+  if (piti45) piti45.textContent = 'PITI: ' + formatCurrency(power45.piti) + '/mo';
+  if (piti50) piti50.textContent = 'PITI: ' + formatCurrency(power50.piti) + '/mo';
 }
 
 function calculateMaxPurchase(monthlyIncome, monthlyDebts, targetDTI) {
-  if (monthlyIncome <= 0) return 0;
+  if (monthlyIncome <= 0) return { price: 0, piti: 0 };
 
   const rate = parseFloat(document.querySelector('[name="interest_rate"]')?.value) || 7.0;
   const taxesAnnual = parseFloat(document.querySelector('[name="property_taxes_annual"]')?.value) || 0;
@@ -1038,15 +1053,22 @@ function calculateMaxPurchase(monthlyIncome, monthlyDebts, targetDTI) {
   const numPayments = 360;
 
   const maxTotalPayment = (monthlyIncome * targetDTI / 100) - monthlyDebts;
-  const maxPI = maxTotalPayment - (taxesAnnual / 12) - (insuranceAnnual / 12) - hoaMonthly;
+  const monthlyTaxes = taxesAnnual / 12;
+  const monthlyInsurance = insuranceAnnual / 12;
+  const maxPI = maxTotalPayment - monthlyTaxes - monthlyInsurance - hoaMonthly;
 
-  if (maxPI <= 0 || monthlyRate <= 0) return 0;
+  if (maxPI <= 0 || monthlyRate <= 0) return { price: 0, piti: 0 };
 
   const maxLoan = maxPI * (Math.pow(1 + monthlyRate, numPayments) - 1) / (monthlyRate * Math.pow(1 + monthlyRate, numPayments));
 
   // Assume 3% down payment for max calculation
   const downPaymentPercent = 0.03;
-  return maxLoan / (1 - downPaymentPercent);
+  const maxPrice = maxLoan / (1 - downPaymentPercent);
+
+  // Calculate PITI for this max purchase
+  const piti = maxPI + monthlyTaxes + monthlyInsurance + hoaMonthly;
+
+  return { price: maxPrice, piti: piti };
 }
 
 // Update calculation display from server response

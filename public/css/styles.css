@@ -630,65 +630,127 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.85rem;
 }
 
-/* Borrower Cards - Alternating light tints */
+/* Borrower Cards - Enhanced layout */
 .borrower-card {
   border: 1px solid var(--blush);
-  border-radius: 30px;
+  border-radius: 16px;
   background: white;
-  padding: var(--space-lg);
-  margin-bottom: 10px;
+  padding: var(--space-lg) var(--space-xl);
+  margin-bottom: var(--space-md);
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
 }
 
 .borrower-card:nth-child(odd) {
-  background: #F7F5F2;  /* Light sand */
+  background: #FDFCFA;
+  border-left: 4px solid var(--sage);
 }
 
 .borrower-card:nth-child(even) {
-  background: #E8EDE8;  /* Light sage */
+  background: #FAFBFA;
+  border-left: 4px solid var(--blush);
 }
 
 .borrower-card:nth-child(3n) {
-  background: #EDE8E5;  /* Light blush */
-}
-
-.borrower-card:nth-child(4n) {
-  background: #EAEAEA;  /* Light cloud */
+  border-left-color: var(--almond);
 }
 
 .borrower-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 .borrower-card-content {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
-.borrower-card-info {
+.borrower-card-main {
   display: flex;
-  gap: var(--space-xl);
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .borrower-card-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  color: var(--text);
 }
 
-.borrower-card-detail {
+.borrower-card-name .coborrower-tag {
+  font-weight: 400;
   color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.borrower-card-contact {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.borrower-card-details {
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.borrower-card-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.borrower-card-stat .stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-light);
+  letter-spacing: 0.05em;
+}
+
+.borrower-card-stat .stat-value {
+  font-weight: 600;
   font-size: 0.9rem;
+  color: var(--text);
+}
+
+.borrower-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.borrower-card-date {
+  font-size: 0.75rem;
+  color: var(--text-light);
 }
 
 .borrower-card-actions {
   display: flex;
   gap: var(--space-sm);
+}
+
+@media (max-width: 900px) {
+  .borrower-card-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .borrower-card-details {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .borrower-card-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 
 /* Credit Tab */
@@ -770,8 +832,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .summary-table tr.highlight td {
-  background: var(--sage);
-  color: var(--primary-dark);
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
 }
 
 .purchase-power-grid {
@@ -782,31 +845,34 @@ h1, h2, h3, h4, h5, h6 {
 
 .power-item {
   text-align: center;
-  padding: var(--space-md);
-  background: var(--sage);
-  border-radius: 6px;
+  padding: var(--space-lg);
+  background: var(--primary);
+  border-radius: 8px;
 }
 
 .power-label {
   display: block;
-  font-size: 0.8rem;
-  color: var(--primary-dark);
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.85);
   margin-bottom: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .power-value {
   display: block;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: white;
   font-family: var(--font-mono);
 }
 
 .power-piti {
   display: block;
-  font-size: 0.75rem;
-  color: var(--primary);
-  margin-top: var(--space-xs);
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.9);
+  margin-top: var(--space-sm);
+  font-weight: 500;
 }
 
 /* Claude Analysis */
@@ -1005,9 +1071,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .knowledge-tab.active {
-  background: var(--sage);
-  border-color: var(--sage);
-  color: var(--primary-dark);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
 }
 
 .knowledge-content {
@@ -1078,8 +1144,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .status-qualified {
-  background: var(--sage);
-  color: var(--primary-dark);
+  background: var(--primary);
+  color: white;
 }
 
 .status-not_qualified {

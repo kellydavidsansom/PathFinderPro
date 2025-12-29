@@ -43,33 +43,49 @@
       <div class="borrower-list">
         <h3>Recent Borrowers</h3>
         <% borrowers.forEach(b => { %>
-        <div class="borrower-card">
+        <div class="borrower-card" onclick="goToBorrower(<%= b.id %>, '<%= b.status %>')" style="cursor: pointer;">
           <div class="borrower-card-content">
-            <div class="borrower-card-info">
+            <div class="borrower-card-main">
               <div class="borrower-card-name">
                 <%= b.first_name || 'New' %> <%= b.last_name || 'Borrower' %>
-              </div>
-              <div class="borrower-card-detail">
-                <span class="status-badge status-<%= b.status %>">
-                  <%= b.status.charAt(0).toUpperCase() + b.status.slice(1) %>
-                </span>
-              </div>
-              <div class="borrower-card-detail">
-                <% if (b.purchase_price) { %>
-                  $<%= Number(b.purchase_price).toLocaleString() %>
-                <% } else { %>
-                  <span class="text-muted">-</span>
+                <% if (b.has_coborrower && b.co_first_name) { %>
+                  <span class="coborrower-tag">& <%= b.co_first_name %></span>
                 <% } %>
               </div>
-              <div class="borrower-card-detail">
-                Credit: <% if (b.credit_score) { %><%= b.credit_score %><% } else { %><span class="text-muted">-</span><% } %>
-              </div>
-              <div class="borrower-card-detail">
-                <%= new Date(b.updated_at).toLocaleDateString() %>
+              <div class="borrower-card-contact">
+                <% if (b.phone) { %><span><%= b.phone %></span><% } %>
+                <% if (b.email) { %><span><%= b.email %></span><% } %>
               </div>
             </div>
-            <div class="borrower-card-actions">
-              <a href="/interview/<%= b.id %>" class="btn btn-sm btn-continue">Continue</a>
+            <div class="borrower-card-details">
+              <div class="borrower-card-stat">
+                <span class="stat-label">Purpose</span>
+                <span class="stat-value"><%= b.loan_purpose || 'Purchase' %></span>
+              </div>
+              <div class="borrower-card-stat">
+                <span class="stat-label">Price</span>
+                <span class="stat-value"><% if (b.purchase_price) { %>$<%= Number(b.purchase_price).toLocaleString() %><% } else { %>-<% } %></span>
+              </div>
+              <div class="borrower-card-stat">
+                <span class="stat-label">Down</span>
+                <span class="stat-value"><% if (b.down_payment_amount) { %>$<%= Number(b.down_payment_amount).toLocaleString() %><% } else { %>-<% } %></span>
+              </div>
+              <div class="borrower-card-stat">
+                <span class="stat-label">Credit</span>
+                <span class="stat-value"><%= b.credit_score || '-' %></span>
+              </div>
+              <div class="borrower-card-stat">
+                <span class="stat-label">County</span>
+                <span class="stat-value"><%= b.property_county || '-' %></span>
+              </div>
+            </div>
+            <div class="borrower-card-meta">
+              <span class="status-badge status-<%= b.status %>">
+                <%= b.status.charAt(0).toUpperCase() + b.status.slice(1).replace('_', ' ') %>
+              </span>
+              <span class="borrower-card-date"><%= new Date(b.updated_at).toLocaleDateString() %></span>
+            </div>
+            <div class="borrower-card-actions" onclick="event.stopPropagation();">
               <button onclick="deleteBorrower(<%= b.id %>)" class="btn btn-sm btn-danger">Delete</button>
             </div>
           </div>
@@ -322,6 +338,15 @@
       if (confirm('Delete this borrower? This cannot be undone.')) {
         await fetch(`/borrowers/${id}`, { method: 'DELETE' });
         window.location.reload();
+      }
+    }
+
+    function goToBorrower(id, status) {
+      // Go to summary tab if qualified/exported, otherwise go to first tab
+      if (status === 'qualified' || status === 'exported') {
+        window.location.href = `/interview/${id}#summary`;
+      } else {
+        window.location.href = `/interview/${id}`;
       }
     }
 
