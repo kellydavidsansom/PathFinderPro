@@ -630,7 +630,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.85rem;
 }
 
-/* Borrower Cards - Subtle alternating tints */
+/* Borrower Cards - Alternating light tints */
 .borrower-card {
   border: 1px solid var(--blush);
   border-radius: 30px;
@@ -641,19 +641,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .borrower-card:nth-child(odd) {
-  background: #FDFCFA;  /* Warm white */
+  background: #F7F5F2;  /* Light sand */
 }
 
 .borrower-card:nth-child(even) {
-  background: #F9FAF9;  /* Hint of sage */
+  background: #E8EDE8;  /* Light sage */
 }
 
 .borrower-card:nth-child(3n) {
-  background: #FDFAF8;  /* Hint of blush */
+  background: #EDE8E5;  /* Light blush */
 }
 
 .borrower-card:nth-child(4n) {
-  background: #FBFAF7;  /* Hint of sand */
+  background: #EAEAEA;  /* Light cloud */
 }
 
 .borrower-card:hover {
