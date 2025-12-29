@@ -793,22 +793,99 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .summary-card {
-  background: var(--bg);
+  background: white;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: var(--space-lg);
+  border-radius: 12px;
+  padding: var(--space-xl);
   margin-bottom: var(--space-lg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .summary-card h3 {
-  margin: 0 0 var(--space-md);
-  color: var(--primary);
+  margin: 0 0 var(--space-lg);
+  color: var(--primary-dark);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Borrower Snapshot Card */
+.summary-card-snapshot {
+  background: linear-gradient(135deg, var(--sand) 0%, #FAF8F5 100%);
+  border-left: 4px solid var(--sage);
 }
 
 .snapshot-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-lg);
+  gap: var(--space-xl);
+}
+
+.snapshot-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.snapshot-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.snapshot-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.snapshot-coborrower {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.snapshot-phone {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.snapshot-email {
+  font-size: 0.85rem;
+  color: var(--primary);
+}
+
+.snapshot-purpose {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--sage);
+  color: var(--primary-dark);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: var(--space-xs);
+}
+
+/* The Numbers Card */
+.summary-card-numbers {
+  background: linear-gradient(135deg, #F9FAF9 0%, white 100%);
+  border-left: 4px solid var(--primary);
+}
+
+/* Max Purchase Power Card */
+.summary-card-power {
+  background: linear-gradient(135deg, var(--blush) 0%, #FAF5F3 100%);
+  border-left: 4px solid var(--almond);
+}
+
+@media (max-width: 768px) {
+  .snapshot-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
 }
 
 .summary-table {

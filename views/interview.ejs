@@ -838,28 +838,53 @@
       <div class="summary-layout">
         <div class="summary-main">
           <!-- Borrower Snapshot -->
-          <div class="summary-card">
+          <div class="summary-card summary-card-snapshot">
             <h3>Borrower Snapshot</h3>
             <div class="snapshot-grid">
-              <div>
-                <strong id="summaryName"><%= borrower.first_name || '' %> <%= borrower.last_name || '' %></strong>
-                <span id="summaryCoBorrower"><%= borrower.has_coborrower ? `& ${borrower.co_first_name || ''} ${borrower.co_last_name || ''}` : '' %></span>
+              <div class="snapshot-item snapshot-names">
+                <div class="snapshot-label">Borrower</div>
+                <div class="snapshot-value" id="summaryName"><%= borrower.first_name || '' %> <%= borrower.last_name || '' %></div>
+                <% if (borrower.has_coborrower && borrower.co_first_name) { %>
+                <div class="snapshot-coborrower" id="summaryCoBorrower">& <%= borrower.co_first_name %> <%= borrower.co_last_name || '' %></div>
+                <% } %>
               </div>
-              <div>
-                <span id="summaryPhone"><%= borrower.phone || '' %></span><br>
-                <span id="summaryEmail"><%= borrower.email || '' %></span>
+              <div class="snapshot-item snapshot-contact">
+                <div class="snapshot-label">Contact</div>
+                <% if (borrower.phone) { %>
+                <div class="snapshot-phone" id="summaryPhone"><%= borrower.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') %></div>
+                <% } %>
+                <% if (borrower.email) { %>
+                <div class="snapshot-email" id="summaryEmail"><%= borrower.email %></div>
+                <% } %>
               </div>
-              <div>
-                <strong>Property Goal:</strong><br>
-                <span id="summaryPropertyGoal">
-                  <%= borrower.property_type || 'Not specified' %> in <%= borrower.property_county || '?' %> County
-                </span>
+              <div class="snapshot-item snapshot-property">
+                <div class="snapshot-label">Property Goal</div>
+                <div class="snapshot-value" id="summaryPropertyGoal">
+                  <%
+                    // Format property type nicely
+                    const propType = borrower.property_type || '';
+                    const formattedType = propType
+                      .replace(/_/g, ' ')
+                      .replace(/SINGLE FAMILY DETACHED/i, 'Single Family Home')
+                      .replace(/TWO UNIT/i, 'Duplex')
+                      .replace(/THREE UNIT/i, 'Triplex')
+                      .replace(/FOUR UNIT/i, 'Fourplex')
+                      .replace(/CONDO/i, 'Condominium')
+                      .replace(/TOWNHOUSE/i, 'Townhouse')
+                      .replace(/MANUFACTURED/i, 'Manufactured Home')
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                      .join(' ') || 'Not specified';
+                  %>
+                  <%= formattedType %><% if (borrower.property_county) { %> in <%= borrower.property_county %> County<% } %>
+                </div>
+                <div class="snapshot-purpose"><%= borrower.loan_purpose || 'Purchase' %></div>
               </div>
             </div>
           </div>
 
           <!-- The Numbers -->
-          <div class="summary-card">
+          <div class="summary-card summary-card-numbers">
             <h3>The Numbers</h3>
             <table class="summary-table">
               <tr><td>Gross Monthly Income</td><td id="summaryMonthlyIncome">$0</td></tr>
@@ -876,7 +901,7 @@
           </div>
 
           <!-- Max Purchase Power -->
-          <div class="summary-card">
+          <div class="summary-card summary-card-power">
             <h3>Max Purchase Power</h3>
             <div class="purchase-power-grid">
               <div class="power-item">
