@@ -732,10 +732,14 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
 
 // Helper functions
 function buildAnalysisPrompt(borrower, calculations, knowledge) {
-  return `You are a mortgage loan officer assistant analyzing a borrower's qualification profile.
+  const borrowerName = `${borrower.first_name || ''} ${borrower.last_name || ''}`.trim() || 'Valued Client';
+  const borrowerPhone = borrower.phone || '';
+
+  return `You are helping Kelly Sansom, a mortgage loan officer at ClearPath Utah Mortgage, analyze a borrower's qualification profile.
 
 BORROWER DATA:
-Name: ${borrower.first_name} ${borrower.last_name}
+Name: ${borrowerName}
+Phone: ${borrowerPhone}
 ${borrower.has_coborrower ? `Co-Borrower: ${borrower.co_first_name} ${borrower.co_last_name}` : 'No co-borrower'}
 
 INCOME:
@@ -796,14 +800,49 @@ ESTIMATED CASH TO CLOSE: $${calculations.cashToClose.toFixed(2)}
 
 ${knowledge ? `RELEVANT PROGRAM KNOWLEDGE:\n${knowledge.substring(0, 3000)}` : ''}
 
-Please provide a comprehensive analysis including:
-1. **Loan Program Recommendations**: Which programs (Conventional, FHA, VA, USDA) would be best for this borrower and why
-2. **Strengths**: What makes this borrower a strong candidate
-3. **Concerns**: Any red flags or challenges to address
-4. **Down Payment Assistance**: Utah-specific DPA programs they may qualify for (Utah Housing, Salt Lake County, etc.)
-5. **Suggested Next Steps**: Specific actions needed before application
+Please respond with a JSON object containing TWO parts:
 
-Format your response in clear sections with headers.`;
+1. "loanOfficerSummary" - A quick reference for the loan officer with these fields (each should be an array of brief bullet points, 2-4 items each):
+   - strengths: What makes this borrower strong
+   - weaknesses: Areas of concern
+   - primaryRecommendation: Best loan program recommendation (1-2 sentences)
+   - secondaryOptions: Alternative programs to consider
+   - concernsToAddress: Issues that need to be resolved
+   - borrowerOptions: What the borrower could do to improve their position
+   - suggestedNextSteps: Immediate action items
+
+2. "clientLetter" - A warm, professional letter FROM Kelly TO the client. Structure it EXACTLY like this:
+   - greeting: "Dear ${borrowerName}," on its own line, then "${borrowerPhone}" on the next line if phone exists
+   - introduction: A thank you for allowing me to run some numbers. Explain this analysis is a starting point to help them understand where they stand in terms of home readiness. Keep it warm and encouraging. (2-3 sentences)
+   - highlights: Section titled "YOUR HIGHLIGHTS" - What's working in their favor (3-5 bullet points, positive and encouraging)
+   - improvements: Section titled "ROOM FOR IMPROVEMENT" - Areas that could be stronger (2-4 bullet points, constructive not negative)
+   - options: Section titled "OPTIONS TO STRENGTHEN YOUR PROFILE" - Specific actionable things they could do (3-5 numbered items with brief explanations)
+   - clearpath: Section titled "YOUR CLEARPATH FORWARD" - A roadmap paragraph giving them clear next steps to be successful in home buying. Be specific and actionable. End on an encouraging note.
+   - closing: "I'm here to help guide you every step of the way. Please don't hesitate to reach out with any questions."
+   - signature: "Warmly," then "Kelly Sansom" then "Your Mortgage Specialist" then "(801) 891-1846" then "hello@clearpathutah.com"
+
+Return ONLY valid JSON, no markdown code blocks. Example structure:
+{
+  "loanOfficerSummary": {
+    "strengths": ["point 1", "point 2"],
+    "weaknesses": ["point 1"],
+    "primaryRecommendation": "FHA loan due to...",
+    "secondaryOptions": ["Conventional with...", "Utah Housing..."],
+    "concernsToAddress": ["DTI is high", "Need reserves"],
+    "borrowerOptions": ["Pay down car loan", "Add co-borrower income"],
+    "suggestedNextSteps": ["Get pre-approval letter", "Connect with realtor"]
+  },
+  "clientLetter": {
+    "greeting": "Dear John Smith,\\n(801) 555-1234",
+    "introduction": "Thank you for...",
+    "highlights": ["Strong credit score of 720", "Stable employment history"],
+    "improvements": ["DTI is on the higher side", "Limited reserves"],
+    "options": ["1. Pay down your car loan...", "2. Consider adding..."],
+    "clearpath": "Based on your profile, here's your path forward...",
+    "closing": "I'm here to help...",
+    "signature": "Warmly,\\nKelly Sansom\\nYour Mortgage Specialist\\n(801) 891-1846\\nhello@clearpathutah.com"
+  }
+}`;
 }
 
 function buildChatSystemPrompt(borrower, calculations, knowledge) {

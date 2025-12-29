@@ -835,8 +835,48 @@
 
     <!-- SUMMARY TAB -->
     <section id="summary-tab" class="tab-content">
-      <div class="summary-layout">
+      <div class="summary-layout-with-sidebar">
         <div class="summary-main">
+          <!-- Loan Officer Sidebar -->
+          <aside class="loan-officer-sidebar" id="loanOfficerSidebar" style="display: none;">
+            <h4>Loan Officer Quick Reference</h4>
+
+            <div class="sidebar-section">
+              <h5>Strengths</h5>
+              <ul id="sidebarStrengths"></ul>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Weaknesses</h5>
+              <ul id="sidebarWeaknesses"></ul>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Primary Recommendation</h5>
+              <p id="sidebarPrimaryRec"></p>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Secondary Options</h5>
+              <ul id="sidebarSecondaryOptions"></ul>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Concerns to Address</h5>
+              <ul id="sidebarConcerns"></ul>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Borrower Options</h5>
+              <ul id="sidebarBorrowerOptions"></ul>
+            </div>
+
+            <div class="sidebar-section">
+              <h5>Suggested Next Steps</h5>
+              <ul id="sidebarNextSteps"></ul>
+            </div>
+          </aside>
+
           <!-- Borrower Snapshot -->
           <div class="summary-card summary-card-snapshot">
             <h3>Borrower Snapshot</h3>
@@ -942,7 +982,7 @@
                   </div>
                 </div>
                 <div class="analysis-agent-info">
-                  <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508-3146 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
+                  <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
                 </div>
                 <div class="analysis-content">
                   <%- borrower.ai_analysis.replace(/\n/g, '<br>') %>

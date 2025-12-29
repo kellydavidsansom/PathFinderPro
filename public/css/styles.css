@@ -792,6 +792,120 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 900px;
 }
 
+/* Summary Tab with Loan Officer Sidebar */
+.summary-layout-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+  max-width: 1200px;
+}
+
+.summary-layout-with-sidebar .summary-main {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-xl);
+}
+
+.summary-layout-with-sidebar .summary-main > :not(.loan-officer-sidebar) {
+  grid-column: 1;
+}
+
+/* Loan Officer Sidebar */
+.loan-officer-sidebar {
+  grid-column: 2;
+  grid-row: 1 / span 10;
+  background: linear-gradient(180deg, var(--sand) 0%, #FAF8F5 100%);
+  border: 1px solid var(--blush);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  height: fit-content;
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.loan-officer-sidebar h4 {
+  margin: 0 0 var(--space-md);
+  color: var(--primary-dark);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--sage);
+}
+
+.sidebar-section {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sidebar-section h5 {
+  margin: 0 0 var(--space-xs);
+  color: var(--primary-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sidebar-section ul {
+  margin: 0;
+  padding-left: var(--space-md);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.sidebar-section li {
+  margin-bottom: var(--space-xs);
+  color: var(--text);
+}
+
+.sidebar-section p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Strengths - green tint */
+.sidebar-section:has(#sidebarStrengths) h5 {
+  color: var(--success);
+}
+
+/* Weaknesses - muted rose */
+.sidebar-section:has(#sidebarWeaknesses) h5 {
+  color: var(--danger);
+}
+
+/* Primary Recommendation - highlighted */
+.sidebar-section:has(#sidebarPrimaryRec) {
+  background: rgba(143, 163, 143, 0.1);
+  margin-left: calc(-1 * var(--space-md));
+  margin-right: calc(-1 * var(--space-md));
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
+  border-radius: 6px;
+}
+
+@media (max-width: 1000px) {
+  .summary-layout-with-sidebar .summary-main {
+    grid-template-columns: 1fr;
+  }
+
+  .loan-officer-sidebar {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    order: -1;
+  }
+}
+
 .summary-card {
   background: white;
   border: 1px solid var(--border);
@@ -1043,6 +1157,77 @@ h1, h2, h3, h4, h5, h6 {
 
 .analysis-content {
   padding-top: var(--space-md);
+}
+
+/* Client Letter Styles */
+.client-letter {
+  line-height: 1.8;
+}
+
+.letter-greeting {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.letter-phone {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0;
+  margin-bottom: var(--space-lg);
+}
+
+.letter-intro {
+  margin-bottom: var(--space-lg);
+}
+
+.letter-section-title {
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+  margin: var(--space-xl) 0 var(--space-md);
+  padding-bottom: var(--space-xs);
+  border-bottom: 2px solid var(--sage);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.client-letter-list {
+  margin: 0 0 var(--space-lg);
+  padding-left: var(--space-lg);
+}
+
+.client-letter-list li {
+  margin-bottom: var(--space-sm);
+  line-height: 1.6;
+}
+
+.client-letter-options {
+  margin: 0 0 var(--space-lg);
+  padding-left: var(--space-lg);
+}
+
+.client-letter-options li {
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
+}
+
+.letter-clearpath {
+  background: rgba(143, 163, 143, 0.1);
+  border-left: 4px solid var(--sage);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  border-radius: 0 6px 6px 0;
+}
+
+.letter-closing {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.letter-signature {
+  font-style: italic;
+  color: var(--primary-dark);
+  line-height: 1.8;
 }
 
 /* Analysis Report Footer */

@@ -1123,6 +1123,7 @@ async function generateAnalysis() {
   const analysisDiv = document.getElementById('analysisReport');
   const downloadBtn = document.getElementById('downloadPdfBtn');
   const emailBtn = document.getElementById('emailAnalysisBtn');
+  const sidebar = document.getElementById('loanOfficerSidebar');
 
   btn.disabled = true;
   btn.textContent = 'Generating...';
@@ -1136,23 +1137,46 @@ async function generateAnalysis() {
       analysisDiv.innerHTML = `<p class="text-muted">Error: ${error}</p>`;
       downloadBtn.style.display = 'none';
       emailBtn.style.display = 'none';
+      sidebar.style.display = 'none';
     } else {
-      // Convert markdown-style headers and formatting
-      const formatted = analysis
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-        .replace(/\n/g, '<br>');
+      // Try to parse as JSON (new format)
+      let parsed = null;
+      try {
+        parsed = JSON.parse(analysis);
+      } catch (e) {
+        // Not JSON, fallback to old format
+        parsed = null;
+      }
 
-      // Add header with logo
-      analysisDiv.innerHTML = `
-        <div class="analysis-header">
-          <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
-          <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
-        </div>
-        <div class="analysis-content">${formatted}</div>
-      `;
+      if (parsed && parsed.loanOfficerSummary && parsed.clientLetter) {
+        // New JSON format - populate sidebar and client letter
+        populateLoanOfficerSidebar(parsed.loanOfficerSummary);
+        renderClientLetter(parsed.clientLetter);
+        sidebar.style.display = 'block';
+      } else {
+        // Old format or plain text - use original rendering
+        const formatted = analysis
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+          .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+          .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+          .replace(/\n/g, '<br>');
+
+        analysisDiv.innerHTML = `
+          <div class="analysis-header">
+            <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
+            <div class="analysis-header-text">
+              <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+              <div class="analysis-subtitle">by ClearPath Utah Mortgage</div>
+            </div>
+          </div>
+          <div class="analysis-agent-info">
+            <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
+          </div>
+          <div class="analysis-content">${formatted}</div>
+        `;
+        sidebar.style.display = 'none';
+      }
 
       // Show download and email buttons
       downloadBtn.style.display = 'inline-flex';
@@ -1162,10 +1186,122 @@ async function generateAnalysis() {
     analysisDiv.innerHTML = `<p class="text-muted">Failed to generate analysis. Please check your API key.</p>`;
     downloadBtn.style.display = 'none';
     emailBtn.style.display = 'none';
+    if (sidebar) sidebar.style.display = 'none';
   }
 
   btn.disabled = false;
   btn.textContent = 'Generate Analysis';
+}
+
+// Populate the loan officer sidebar with analysis data
+function populateLoanOfficerSidebar(summary) {
+  const populateList = (id, items) => {
+    const el = document.getElementById(id);
+    if (el && items && items.length) {
+      el.innerHTML = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    } else if (el) {
+      el.innerHTML = '<li class="text-muted">None identified</li>';
+    }
+  };
+
+  populateList('sidebarStrengths', summary.strengths);
+  populateList('sidebarWeaknesses', summary.weaknesses);
+  populateList('sidebarSecondaryOptions', summary.secondaryOptions);
+  populateList('sidebarConcerns', summary.concernsToAddress);
+  populateList('sidebarBorrowerOptions', summary.borrowerOptions);
+  populateList('sidebarNextSteps', summary.suggestedNextSteps);
+
+  const primaryRec = document.getElementById('sidebarPrimaryRec');
+  if (primaryRec) {
+    primaryRec.textContent = summary.primaryRecommendation || 'Analysis needed';
+  }
+}
+
+// Render the client letter format
+function renderClientLetter(letter) {
+  const analysisDiv = document.getElementById('analysisReport');
+
+  // Build highlights list
+  const highlightsList = letter.highlights && letter.highlights.length
+    ? `<ul class="client-letter-list">${letter.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}</ul>`
+    : '';
+
+  // Build improvements list
+  const improvementsList = letter.improvements && letter.improvements.length
+    ? `<ul class="client-letter-list">${letter.improvements.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+    : '';
+
+  // Build options list (numbered)
+  const optionsList = letter.options && letter.options.length
+    ? `<ol class="client-letter-options">${letter.options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
+    : '';
+
+  // Format greeting with phone on next line
+  const greetingParts = (letter.greeting || '').split('\n');
+  const greetingName = greetingParts[0] || '';
+  const greetingPhone = greetingParts[1] || '';
+
+  // Format signature
+  const signatureParts = (letter.signature || '').split('\n');
+  const signatureHtml = signatureParts.map(line => escapeHtml(line)).join('<br>');
+
+  analysisDiv.innerHTML = `
+    <div class="analysis-header">
+      <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
+      <div class="analysis-header-text">
+        <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+        <div class="analysis-subtitle">by ClearPath Utah Mortgage</div>
+      </div>
+    </div>
+    <div class="analysis-agent-info">
+      <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
+    </div>
+    <div class="analysis-content client-letter">
+      <p class="letter-greeting">${escapeHtml(greetingName)}</p>
+      ${greetingPhone ? `<p class="letter-phone">${escapeHtml(greetingPhone)}</p>` : ''}
+
+      <p class="letter-intro">${escapeHtml(letter.introduction || '')}</p>
+
+      <h3 class="letter-section-title">YOUR HIGHLIGHTS</h3>
+      ${highlightsList}
+
+      <h3 class="letter-section-title">ROOM FOR IMPROVEMENT</h3>
+      ${improvementsList}
+
+      <h3 class="letter-section-title">OPTIONS TO STRENGTHEN YOUR PROFILE</h3>
+      ${optionsList}
+
+      <h3 class="letter-section-title">YOUR CLEARPATH FORWARD</h3>
+      <p class="letter-clearpath">${escapeHtml(letter.clearpath || '')}</p>
+
+      <p class="letter-closing">${escapeHtml(letter.closing || '')}</p>
+
+      <div class="letter-signature">
+        ${signatureHtml}
+      </div>
+    </div>
+    <div class="analysis-footer">
+      <div class="analysis-footer-content">
+        <div class="analysis-footer-left">
+          <img src="https://clearpathutah.com/wp-content/uploads/2025/07/Clear-Path-Mortgage-Logo-300x300.gif" alt="ClearPath Utah Mortgage" class="analysis-footer-logo">
+        </div>
+        <div class="analysis-footer-center">
+          <div class="analysis-footer-company"><span class="clear">CLEAR</span><span class="path-text">PATH</span> UTAH MORTGAGE</div>
+          <div class="analysis-footer-address">
+            10168 South 2505 East, Sandy, UT 84092<br>
+            <a href="tel:8018911846">(801) 891-1846</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
+          </div>
+          <div class="analysis-footer-nmls">NMLS #2510508 | FAIR LENDER | FAIR HOUSING</div>
+          <div class="analysis-footer-disclaimer">
+            Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.
+          </div>
+        </div>
+        <div class="analysis-footer-right">
+          <img src="https://clearpathutah.com/wp-content/uploads/2025/10/clearpath-utah-mortgage-reviews.webp" alt="Google Reviews & BBB Rating" class="analysis-footer-reviews">
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Download analysis as PDF
