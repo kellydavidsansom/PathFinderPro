@@ -114,11 +114,30 @@ function calculateBorrowerMetrics(borrower) {
     ? JSON.parse(borrower.debts || '[]')
     : (borrower.debts || []);
 
-  // Calculate monthly income from employers
+  // Helper function to calculate annual salary from amount and frequency
+  const calculateAnnualSalary = (emp) => {
+    const amount = parseFloat(emp.salary_amount) || parseFloat(emp.annual_salary) || 0;
+    const frequency = emp.salary_frequency || 'annual';
+
+    if (frequency === 'annual') {
+      return amount;
+    } else if (frequency === 'monthly') {
+      return amount * 12;
+    } else if (frequency === 'weekly') {
+      return amount * 52;
+    }
+    return amount;
+  };
+
+  // Calculate monthly income from employers (excluding previous employers)
   let monthlyEmploymentIncome = 0;
   for (const emp of employers) {
+    // Skip previous employers in income calculation
+    if (emp.is_previous) continue;
+
     if (emp.pay_type === 'salary') {
-      monthlyEmploymentIncome += (parseFloat(emp.annual_salary) || 0) / 12;
+      const annualSalary = calculateAnnualSalary(emp);
+      monthlyEmploymentIncome += annualSalary / 12;
     } else {
       monthlyEmploymentIncome += (parseFloat(emp.hourly_rate) || 0) * (parseFloat(emp.hours_per_week) || 0) * 4.333;
     }
@@ -127,12 +146,16 @@ function calculateBorrowerMetrics(borrower) {
     monthlyEmploymentIncome += parseFloat(emp.commission_monthly) || 0;
   }
 
-  // Co-borrower employment income
+  // Co-borrower employment income (excluding previous employers)
   let coMonthlyEmploymentIncome = 0;
   if (borrower.has_coborrower) {
     for (const emp of coEmployers) {
+      // Skip previous employers in income calculation
+      if (emp.is_previous) continue;
+
       if (emp.pay_type === 'salary') {
-        coMonthlyEmploymentIncome += (parseFloat(emp.annual_salary) || 0) / 12;
+        const annualSalary = calculateAnnualSalary(emp);
+        coMonthlyEmploymentIncome += annualSalary / 12;
       } else {
         coMonthlyEmploymentIncome += (parseFloat(emp.hourly_rate) || 0) * (parseFloat(emp.hours_per_week) || 0) * 4.333;
       }

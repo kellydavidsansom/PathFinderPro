@@ -743,7 +743,13 @@ INCOME:
 - Annual Income: $${calculations.annualIncome.toFixed(2)}
 
 EMPLOYMENT:
-${borrower.employers.map(e => `- ${e.employer_name}: ${e.position}, ${e.employment_type}`).join('\n') || 'No employment data'}
+${borrower.employers.map(e => {
+  const status = e.is_previous ? '(PREVIOUS)' : '(CURRENT)';
+  const timeAtJob = (e.years_at_job || e.months_at_job)
+    ? ` - ${e.years_at_job || 0} years, ${e.months_at_job || 0} months`
+    : '';
+  return `- ${e.employer_name}: ${e.position}, ${e.employment_type} ${status}${timeAtJob}`;
+}).join('\n') || 'No employment data'}
 
 ASSETS:
 - Total Assets: $${calculations.totalAssets.toFixed(2)}

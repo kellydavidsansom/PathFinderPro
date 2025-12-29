@@ -275,7 +275,13 @@ function createEmployerBlockHTML(index, prefix, emp = {}) {
     <div class="employer-block" data-index="${index}" data-prefix="${prefix}">
       <div class="block-header">
         <h4>Employer ${index + 1}</h4>
-        <button class="btn btn-sm btn-danger" onclick="removeEmployer('${prefix}', ${index})">Remove</button>
+        <div class="block-header-actions">
+          <label class="previous-employer-label">
+            <input type="checkbox" class="emp-field emp-previous" data-field="is_previous" ${emp.is_previous ? 'checked' : ''}>
+            <span>Previous Employer</span>
+          </label>
+          <button class="btn btn-sm btn-danger" onclick="removeEmployer('${prefix}', ${index})">Remove</button>
+        </div>
       </div>
       <div class="form-grid">
         <div class="form-group">
@@ -291,8 +297,13 @@ function createEmployerBlockHTML(index, prefix, emp = {}) {
           <input type="date" class="emp-field" data-field="start_date" value="${emp.start_date || ''}">
         </div>
         <div class="form-group">
-          <label>Years in Line of Work</label>
-          <input type="number" class="emp-field" data-field="years_in_line" value="${emp.years_in_line || ''}" step="0.5">
+          <label>Time at Job</label>
+          <div class="time-at-job-inputs">
+            <input type="number" class="emp-field emp-years" data-field="years_at_job" value="${emp.years_at_job || ''}" placeholder="Years" min="0">
+            <span>yrs</span>
+            <input type="number" class="emp-field emp-months" data-field="months_at_job" value="${emp.months_at_job || ''}" placeholder="Months" min="0" max="11">
+            <span>mos</span>
+          </div>
         </div>
         <div class="form-group">
           <label>Employment Type</label>
@@ -313,8 +324,15 @@ function createEmployerBlockHTML(index, prefix, emp = {}) {
       <div class="salary-fields">
         <div class="form-grid">
           <div class="form-group">
-            <label>Annual Salary</label>
-            <input type="number" class="emp-field" data-field="annual_salary" value="${emp.annual_salary || ''}" placeholder="$0">
+            <label>Salary</label>
+            <div class="salary-input-group">
+              <input type="number" class="emp-field emp-salary-amount" data-field="salary_amount" value="${emp.salary_amount || emp.annual_salary || ''}" placeholder="$0">
+              <select class="emp-field emp-salary-frequency" data-field="salary_frequency">
+                <option value="annual" ${(!emp.salary_frequency || emp.salary_frequency === 'annual') ? 'selected' : ''}>Annual</option>
+                <option value="monthly" ${emp.salary_frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                <option value="weekly" ${emp.salary_frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label>Monthly (calculated)</label>
@@ -376,12 +394,30 @@ function collectEmployerData(containerId) {
   container.querySelectorAll('.employer-block').forEach(block => {
     const emp = {};
     block.querySelectorAll('.emp-field').forEach(input => {
-      emp[input.dataset.field] = input.value;
+      // Handle checkbox values
+      if (input.type === 'checkbox') {
+        emp[input.dataset.field] = input.checked;
+      } else {
+        emp[input.dataset.field] = input.value;
+      }
     });
 
     // Get pay type
     const activePayType = block.querySelector('.pay-type-btn.active');
     emp.pay_type = activePayType ? activePayType.dataset.value : 'salary';
+
+    // Calculate annual_salary from salary_amount and frequency for backward compatibility
+    if (emp.pay_type === 'salary' && emp.salary_amount) {
+      const amount = parseFloat(emp.salary_amount) || 0;
+      const frequency = emp.salary_frequency || 'annual';
+      if (frequency === 'annual') {
+        emp.annual_salary = amount;
+      } else if (frequency === 'monthly') {
+        emp.annual_salary = amount * 12;
+      } else if (frequency === 'weekly') {
+        emp.annual_salary = amount * 52;
+      }
+    }
 
     employers.push(emp);
   });
@@ -814,12 +850,18 @@ function updateIncomeCalculations() {
 
   let primaryEmpIncome = 0;
   primaryEmployers.forEach(emp => {
-    primaryEmpIncome += calculateEmployerIncome(emp);
+    // Only include current employers (not previous) in the calculator
+    if (!emp.is_previous) {
+      primaryEmpIncome += calculateEmployerIncome(emp);
+    }
   });
 
   let coEmpIncome = 0;
   coEmployers.forEach(emp => {
-    coEmpIncome += calculateEmployerIncome(emp);
+    // Only include current employers (not previous) in the calculator
+    if (!emp.is_previous) {
+      coEmpIncome += calculateEmployerIncome(emp);
+    }
   });
 
   let primaryOtherIncome = 0;
@@ -866,8 +908,19 @@ function updateEmployerMonthlyCalcs() {
     const calcField = block.querySelector('.emp-monthly-calc');
 
     if (isSalary) {
-      const annual = parseFloat(block.querySelector('[data-field="annual_salary"]')?.value) || 0;
-      if (calcField) calcField.value = formatCurrency(annual / 12);
+      const amount = parseFloat(block.querySelector('[data-field="salary_amount"]')?.value) || 0;
+      const frequency = block.querySelector('[data-field="salary_frequency"]')?.value || 'annual';
+
+      let monthly = 0;
+      if (frequency === 'annual') {
+        monthly = amount / 12;
+      } else if (frequency === 'monthly') {
+        monthly = amount;
+      } else if (frequency === 'weekly') {
+        monthly = amount * 52 / 12;
+      }
+
+      if (calcField) calcField.value = formatCurrency(monthly);
     } else {
       const hourly = parseFloat(block.querySelector('[data-field="hourly_rate"]')?.value) || 0;
       const hours = parseFloat(block.querySelector('[data-field="hours_per_week"]')?.value) || 0;
@@ -876,7 +929,7 @@ function updateEmployerMonthlyCalcs() {
   });
 }
 
-// Get total monthly income
+// Get total monthly income (excludes previous employers)
 function getMonthlyIncome() {
   const primaryEmployers = collectEmployerData('primaryEmployers');
   const coEmployers = collectEmployerData('coEmployers');
@@ -884,8 +937,16 @@ function getMonthlyIncome() {
   const coOther = collectOtherIncomeData('coOtherIncome');
 
   let total = 0;
-  primaryEmployers.forEach(emp => total += calculateEmployerIncome(emp));
-  coEmployers.forEach(emp => total += calculateEmployerIncome(emp));
+  primaryEmployers.forEach(emp => {
+    if (!emp.is_previous) {
+      total += calculateEmployerIncome(emp);
+    }
+  });
+  coEmployers.forEach(emp => {
+    if (!emp.is_previous) {
+      total += calculateEmployerIncome(emp);
+    }
+  });
   primaryOther.forEach(inc => total += parseFloat(inc.monthly_amount) || 0);
   coOther.forEach(inc => total += parseFloat(inc.monthly_amount) || 0);
 

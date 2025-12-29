@@ -1,7 +1,13 @@
 <div class="employer-block" data-index="<%= index %>" data-prefix="<%= prefix %>">
   <div class="block-header">
     <h4>Employer <%= index + 1 %></h4>
-    <button class="btn btn-sm btn-danger" onclick="removeEmployer('<%= prefix %>', <%= index %>)">Remove</button>
+    <div class="block-header-actions">
+      <label class="previous-employer-label">
+        <input type="checkbox" class="emp-field emp-previous" data-field="is_previous" <%= emp.is_previous ? 'checked' : '' %>>
+        <span>Previous Employer</span>
+      </label>
+      <button class="btn btn-sm btn-danger" onclick="removeEmployer('<%= prefix %>', <%= index %>)">Remove</button>
+    </div>
   </div>
   <div class="form-grid">
     <div class="form-group">
@@ -17,8 +23,13 @@
       <input type="date" class="emp-field" data-field="start_date" value="<%= emp.start_date || '' %>">
     </div>
     <div class="form-group">
-      <label>Years in Line of Work</label>
-      <input type="number" class="emp-field" data-field="years_in_line" value="<%= emp.years_in_line || '' %>" step="0.5">
+      <label>Time at Job</label>
+      <div class="time-at-job-inputs">
+        <input type="number" class="emp-field emp-years" data-field="years_at_job" value="<%= emp.years_at_job || '' %>" placeholder="Years" min="0">
+        <span>yrs</span>
+        <input type="number" class="emp-field emp-months" data-field="months_at_job" value="<%= emp.months_at_job || '' %>" placeholder="Months" min="0" max="11">
+        <span>mos</span>
+      </div>
     </div>
     <div class="form-group">
       <label>Employment Type</label>
@@ -40,8 +51,15 @@
   <div class="salary-fields <%= emp.pay_type === 'hourly' ? 'hidden' : '' %>">
     <div class="form-grid">
       <div class="form-group">
-        <label>Annual Salary</label>
-        <input type="number" class="emp-field" data-field="annual_salary" value="<%= emp.annual_salary || '' %>" placeholder="$0">
+        <label>Salary</label>
+        <div class="salary-input-group">
+          <input type="number" class="emp-field emp-salary-amount" data-field="salary_amount" value="<%= emp.salary_amount || emp.annual_salary || '' %>" placeholder="$0">
+          <select class="emp-field emp-salary-frequency" data-field="salary_frequency">
+            <option value="annual" <%= (!emp.salary_frequency || emp.salary_frequency === 'annual') ? 'selected' : '' %>>Annual</option>
+            <option value="monthly" <%= emp.salary_frequency === 'monthly' ? 'selected' : '' %>>Monthly</option>
+            <option value="weekly" <%= emp.salary_frequency === 'weekly' ? 'selected' : '' %>>Weekly</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label>Monthly (calculated)</label>
