@@ -605,7 +605,14 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
   try {
     const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
+    const path = require('path');
+    const fs = require('fs');
+
+    const doc = new PDFDocument({
+      margin: 50,
+      size: 'LETTER',
+      bufferPages: true
+    });
 
     // Build filename: PathFinderPro-ClearPathUtah-Lastname-Firstname.pdf
     const lastName = (borrower.last_name || 'Client').replace(/[^a-zA-Z]/g, '');
@@ -617,6 +624,17 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
     doc.pipe(res);
 
+    // Background color (sand: #F5F0E8)
+    const pageWidth = 612;
+    const pageHeight = 792;
+    doc.rect(0, 0, pageWidth, pageHeight).fill('#F5F0E8');
+
+    // Image paths
+    const imagesPath = path.join(__dirname, '..', 'public', 'images');
+    const logoPath = path.join(imagesPath, 'logo.png');
+    const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
+    const reviewsPath = path.join(imagesPath, 'reviews.png');
+
     // Try to parse as JSON (new format)
     let parsed = null;
     try {
@@ -625,32 +643,50 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
       parsed = null;
     }
 
-    // Header
-    doc.fontSize(24).font('Helvetica-Bold');
-    doc.fillColor('#000000').text('PATH', { continued: true });
+    // ===== HEADER =====
+    const headerY = 40;
+
+    // Logo (centered)
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, (pageWidth - 50) / 2, headerY, { width: 50 });
+    }
+
+    // PATHFINDER PRO title (centered)
+    doc.y = headerY + 55;
+    const titleText = 'PATHFINDER PRO';
+    doc.fontSize(22).font('Helvetica-Bold');
+    // Calculate width for centering
+    doc.fillColor('#000000').text('PATH', 0, doc.y, { continued: true, align: 'center' });
     doc.fillColor('#f90000').text('FINDER', { continued: true });
-    doc.fillColor('#000000').text(' PRO');
-    doc.fontSize(11).fillColor('#666666').font('Helvetica');
-    doc.text('by ClearPath Utah Mortgage');
+    doc.fillColor('#000000').text(' PRO', { continued: false });
+
+    // Subtitle
+    doc.fontSize(10).fillColor('#666666').font('Helvetica');
+    doc.text('by ClearPath Utah Mortgage', { align: 'center' });
+    doc.moveDown(0.3);
+
+    // Agent info (centered)
+    doc.fontSize(9).fillColor('#333333');
+    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508 | (801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', { align: 'center' });
+
+    // Thin divider line
     doc.moveDown(0.5);
+    doc.strokeColor('#8FA38F').lineWidth(0.5);
+    doc.moveTo(50, doc.y).lineTo(pageWidth - 50, doc.y).stroke();
+    doc.moveDown(0.8);
 
-    // Agent info
-    doc.fontSize(10).fillColor('#333333');
-    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508 | (801) 891-1846 | clearpathutah.com | hello@clearpathutah.com');
-    doc.moveDown();
-
-    // Divider
-    doc.strokeColor('#8FA38F').lineWidth(2);
-    doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke();
-    doc.moveDown();
+    // ===== CONTENT =====
+    const contentStartY = doc.y;
 
     if (parsed && parsed.clientLetter) {
       const letter = parsed.clientLetter;
 
       // Format phone number
       let phone = '';
+      let greetingName = '';
       if (letter.greeting) {
         const parts = letter.greeting.split('\n');
+        greetingName = parts[0] || '';
         if (parts[1]) {
           const digits = parts[1].replace(/\D/g, '');
           if (digits.length === 10) {
@@ -659,94 +695,104 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
             phone = parts[1];
           }
         }
-        // Greeting
-        doc.fontSize(12).fillColor('#333333').font('Helvetica-Bold');
-        doc.text(parts[0] || '');
+      }
+
+      // Greeting
+      if (greetingName) {
+        doc.fontSize(13).fillColor('#333333').font('Helvetica-Bold');
+        doc.text(greetingName, 50);
         if (phone) {
           doc.fontSize(10).fillColor('#666666').font('Helvetica');
-          doc.text(phone);
+          doc.text(phone, 50);
         }
-        doc.moveDown();
+        doc.moveDown(0.8);
       }
 
       // Introduction
       if (letter.introduction) {
-        doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        doc.text(letter.introduction, { lineGap: 4 });
-        doc.moveDown();
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        doc.text(letter.introduction, 50, doc.y, { width: pageWidth - 100, lineGap: 3 });
+        doc.moveDown(1);
       }
+
+      // Section helper function
+      const renderSection = (title, items, numbered = false) => {
+        if (!items || !items.length) return;
+
+        doc.fontSize(10).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text(title, 50);
+        // Underline
+        doc.strokeColor('#8FA38F').lineWidth(0.5);
+        const underlineWidth = doc.widthOfString(title);
+        doc.moveTo(50, doc.y + 1).lineTo(50 + underlineWidth, doc.y + 1).stroke();
+        doc.moveDown(0.4);
+
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        items.forEach((item, i) => {
+          const prefix = numbered ? `${i + 1}. ` : '• ';
+          doc.text(prefix + item, 50, doc.y, { width: pageWidth - 100, lineGap: 2 });
+          doc.moveDown(0.2);
+        });
+        doc.moveDown(0.8);
+      };
 
       // YOUR HIGHLIGHTS
-      if (letter.highlights && letter.highlights.length) {
-        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
-        doc.text('YOUR HIGHLIGHTS');
-        doc.strokeColor('#8FA38F').lineWidth(1);
-        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
-        doc.moveDown(0.5);
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        letter.highlights.forEach(item => {
-          doc.text(`• ${item}`, { lineGap: 3 });
-        });
-        doc.moveDown();
-      }
+      renderSection('YOUR HIGHLIGHTS', letter.highlights);
 
       // ROOM FOR IMPROVEMENT
-      if (letter.improvements && letter.improvements.length) {
-        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
-        doc.text('ROOM FOR IMPROVEMENT');
-        doc.strokeColor('#8FA38F').lineWidth(1);
-        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
-        doc.moveDown(0.5);
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        letter.improvements.forEach(item => {
-          doc.text(`• ${item}`, { lineGap: 3 });
-        });
-        doc.moveDown();
-      }
+      renderSection('ROOM FOR IMPROVEMENT', letter.improvements);
 
       // OPTIONS TO STRENGTHEN YOUR PROFILE
-      if (letter.options && letter.options.length) {
-        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
-        doc.text('OPTIONS TO STRENGTHEN YOUR PROFILE');
-        doc.strokeColor('#8FA38F').lineWidth(1);
-        doc.moveTo(50, doc.y + 2).lineTo(280, doc.y + 2).stroke();
-        doc.moveDown(0.5);
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        letter.options.forEach((item, i) => {
-          doc.text(`${i + 1}. ${item}`, { lineGap: 3 });
-        });
-        doc.moveDown();
-      }
+      renderSection('OPTIONS TO STRENGTHEN YOUR PROFILE', letter.options, true);
 
       // YOUR CLEARPATH FORWARD
       if (letter.clearpath) {
-        doc.fontSize(11).fillColor('#1a1a1a').font('Helvetica-Bold');
-        doc.text('YOUR CLEARPATH FORWARD');
-        doc.strokeColor('#8FA38F').lineWidth(1);
-        doc.moveTo(50, doc.y + 2).lineTo(200, doc.y + 2).stroke();
+        doc.fontSize(10).fillColor('#1a1a1a').font('Helvetica-Bold');
+        doc.text('YOUR CLEARPATH FORWARD', 50);
+        doc.strokeColor('#8FA38F').lineWidth(0.5);
+        const underlineWidth = doc.widthOfString('YOUR CLEARPATH FORWARD');
+        doc.moveTo(50, doc.y + 1).lineTo(50 + underlineWidth, doc.y + 1).stroke();
         doc.moveDown(0.5);
-        // Highlighted box
+
+        // Highlighted box with proper height calculation
+        const boxX = 50;
+        const boxWidth = pageWidth - 100;
+        const boxPadding = 12;
+
+        // Measure text height first
+        doc.fontSize(10).font('Helvetica');
+        const textHeight = doc.heightOfString(letter.clearpath, { width: boxWidth - (boxPadding * 2) });
+        const boxHeight = textHeight + (boxPadding * 2);
+
         const boxY = doc.y;
-        doc.rect(50, boxY, 512, 60).fill('#f5f7f5');
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        doc.text(letter.clearpath, 60, boxY + 10, { width: 492, lineGap: 4 });
-        doc.y = boxY + 70;
-        doc.moveDown();
+        // Draw box with sage tint and left border
+        doc.rect(boxX, boxY, boxWidth, boxHeight).fill('#EDF2ED');
+        doc.rect(boxX, boxY, 4, boxHeight).fill('#8FA38F');
+
+        // Add text inside box
+        doc.fillColor('#333333');
+        doc.text(letter.clearpath, boxX + boxPadding + 4, boxY + boxPadding, {
+          width: boxWidth - (boxPadding * 2) - 4,
+          lineGap: 3
+        });
+
+        doc.y = boxY + boxHeight + 15;
       }
 
       // Closing
       if (letter.closing) {
-        doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        doc.text(letter.closing, { lineGap: 4 });
-        doc.moveDown();
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+        doc.text(letter.closing, 50, doc.y, { width: pageWidth - 100, lineGap: 3 });
+        doc.moveDown(0.8);
       }
 
       // Signature
       if (letter.signature) {
-        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        doc.fontSize(10).fillColor('#333333').font('Helvetica');
         const sigLines = letter.signature.split('\n');
-        sigLines.forEach(line => doc.text(line));
-        doc.moveDown();
+        sigLines.forEach(line => {
+          doc.text(line, 50);
+        });
       }
     } else {
       // Old format - just render the text
@@ -756,31 +802,54 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
         .replace(/##/g, '')
         .replace(/#/g, '');
 
-      doc.fontSize(11).fillColor('#333333').font('Helvetica');
-      doc.text(cleanAnalysis, { align: 'left', lineGap: 4 });
+      doc.fontSize(10).fillColor('#333333').font('Helvetica');
+      doc.text(cleanAnalysis, 50, doc.y, { width: pageWidth - 100, lineGap: 4 });
     }
 
-    // Footer
-    doc.moveDown(2);
-    doc.strokeColor('#e0e0e0').lineWidth(1);
-    doc.moveTo(50, doc.y).lineTo(562, doc.y).stroke();
-    doc.moveDown(0.5);
+    // ===== FOOTER =====
+    doc.moveDown(1.5);
 
-    // CLEARPATH UTAH MORTGAGE with colors
-    doc.fontSize(11).font('Helvetica-Bold');
-    doc.fillColor('#8f8c83').text('CLEAR', { continued: true });
+    // Thin divider
+    doc.strokeColor('#e0e0e0').lineWidth(0.5);
+    doc.moveTo(50, doc.y).lineTo(pageWidth - 50, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    const footerY = doc.y;
+
+    // Three-column footer layout
+    const colWidth = (pageWidth - 100) / 3;
+    const leftColX = 50;
+    const centerColX = 50 + colWidth;
+    const rightColX = 50 + colWidth * 2;
+
+    // Left: ClearPath logo
+    if (fs.existsSync(clearpathLogoPath)) {
+      doc.image(clearpathLogoPath, leftColX + 20, footerY, { width: 60 });
+    }
+
+    // Center: Company info
+    doc.fontSize(10).font('Helvetica-Bold');
+    const centerTextX = centerColX;
+    const centerTextWidth = colWidth;
+
+    // CLEARPATH UTAH MORTGAGE with colors (centered in middle column)
+    doc.fillColor('#8f8c83').text('CLEAR', centerTextX, footerY, { continued: true, width: centerTextWidth, align: 'center' });
     doc.fillColor('#b9b399').text('PATH', { continued: true });
     doc.fillColor('#8f8c83').text(' UTAH MORTGAGE', { continued: false });
 
-    doc.fontSize(9).fillColor('#666666').font('Helvetica');
-    doc.text('(801) 891-1846 | hello@clearpathutah.com');
-    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING');
-    doc.moveDown(0.5);
-    doc.fontSize(8).fillColor('#999999');
-    doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.', {
-      width: 512,
-      align: 'center'
-    });
+    doc.fontSize(8).fillColor('#666666').font('Helvetica');
+    doc.text('(801) 891-1846 | hello@clearpathutah.com', centerTextX, doc.y + 2, { width: centerTextWidth, align: 'center' });
+    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', centerTextX, doc.y + 2, { width: centerTextWidth, align: 'center' });
+
+    // Right: Reviews image
+    if (fs.existsSync(reviewsPath)) {
+      doc.image(reviewsPath, rightColX + 20, footerY, { width: 70 });
+    }
+
+    // Disclaimer at very bottom
+    doc.fontSize(7).fillColor('#999999');
+    doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.',
+      50, pageHeight - 40, { width: pageWidth - 100, align: 'center' });
 
     doc.end();
   } catch (error) {
