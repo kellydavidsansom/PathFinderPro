@@ -882,29 +882,42 @@
               <div class="power-item">
                 <span class="power-label">At 43% DTI</span>
                 <span class="power-value" id="maxPurchase43">$0</span>
+                <span class="power-piti" id="piti43">PITI: $0/mo</span>
               </div>
               <div class="power-item">
                 <span class="power-label">At 45% DTI</span>
                 <span class="power-value" id="maxPurchase45">$0</span>
+                <span class="power-piti" id="piti45">PITI: $0/mo</span>
               </div>
               <div class="power-item">
                 <span class="power-label">At 50% DTI</span>
                 <span class="power-value" id="maxPurchase50">$0</span>
+                <span class="power-piti" id="piti50">PITI: $0/mo</span>
               </div>
             </div>
           </div>
 
-          <!-- AI Analysis -->
-          <div class="summary-card">
+          <!-- Claude Analysis -->
+          <div class="summary-card" id="analysisCard">
             <div class="section-header">
-              <h3>AI Analysis Report</h3>
-              <button class="btn" onclick="generateAnalysis()">Generate Analysis</button>
+              <h3>Claude Analysis Report</h3>
+              <div class="analysis-actions">
+                <button class="btn btn-primary" onclick="generateAnalysis()">Generate Analysis</button>
+                <button class="btn" onclick="downloadAnalysisPDF()" id="downloadPdfBtn" style="display:none;">Download PDF</button>
+                <button class="btn" onclick="emailAnalysis()" id="emailAnalysisBtn" style="display:none;">Email to Client</button>
+              </div>
             </div>
-            <div id="aiAnalysis" class="ai-analysis">
+            <div id="analysisReport" class="ai-analysis">
               <% if (borrower.ai_analysis) { %>
-                <%- borrower.ai_analysis.replace(/\n/g, '<br>') %>
+                <div class="analysis-header">
+                  <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
+                  <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+                </div>
+                <div class="analysis-content">
+                  <%- borrower.ai_analysis.replace(/\n/g, '<br>') %>
+                </div>
               <% } else { %>
-                <p class="text-muted">Click "Generate Analysis" to get AI-powered insights on this borrower's qualification profile.</p>
+                <p class="text-muted">Click "Generate Analysis" to get Claude-powered insights on this borrower's qualification profile.</p>
               <% } %>
             </div>
           </div>

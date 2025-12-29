@@ -594,6 +594,142 @@ router.get('/export/mismo/:borrowerId', (req, res) => {
   res.send(xml);
 });
 
+// Download Analysis as PDF
+router.get('/analysis/:borrowerId/pdf', async (req, res) => {
+  const database = db.getDb();
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
+
+  if (!borrower || !borrower.ai_analysis) {
+    return res.status(404).json({ error: 'Analysis not found' });
+  }
+
+  try {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="PathFinder_Analysis_${borrower.last_name || 'Borrower'}.pdf"`);
+
+    doc.pipe(res);
+
+    // Header with logo placeholder (text-based for simplicity)
+    doc.fontSize(24).font('Helvetica-Bold');
+    doc.fillColor('#000000').text('PATH', { continued: true });
+    doc.fillColor('#f90000').text('FINDER', { continued: true });
+    doc.fillColor('#000000').text(' PRO');
+
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#666666').text('Loan Qualification Analysis Report');
+    doc.moveDown();
+
+    // Borrower info
+    doc.fontSize(14).fillColor('#000000').font('Helvetica-Bold');
+    doc.text(`Borrower: ${borrower.first_name || ''} ${borrower.last_name || ''}`);
+    doc.fontSize(10).fillColor('#666666').font('Helvetica');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`);
+    doc.moveDown();
+
+    // Divider line
+    doc.strokeColor('#e0e0e0').lineWidth(1);
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown();
+
+    // Analysis content
+    doc.fontSize(11).fillColor('#333333').font('Helvetica');
+
+    // Clean up the analysis text for PDF
+    const cleanAnalysis = borrower.ai_analysis
+      .replace(/\*\*/g, '')
+      .replace(/###/g, '')
+      .replace(/##/g, '')
+      .replace(/#/g, '');
+
+    doc.text(cleanAnalysis, {
+      align: 'left',
+      lineGap: 4
+    });
+
+    // Footer
+    doc.moveDown(2);
+    doc.fontSize(9).fillColor('#999999');
+    doc.text('ClearPath Utah Mortgage | Kelly (801) 891-1846 | hello@clearpathutah.com', {
+      align: 'center'
+    });
+
+    doc.end();
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+});
+
+// Email Analysis to Client
+router.post('/analysis/:borrowerId/email', async (req, res) => {
+  const database = db.getDb();
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
+  const { clientEmail } = req.body;
+
+  if (!borrower || !borrower.ai_analysis) {
+    return res.status(404).json({ error: 'Analysis not found' });
+  }
+
+  if (!clientEmail) {
+    return res.status(400).json({ error: 'Client email is required' });
+  }
+
+  try {
+    const nodemailer = require('nodemailer');
+
+    // Create transporter - using environment variables for SMTP config
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+
+    // Format analysis for email
+    const analysisHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; padding: 20px; border-bottom: 1px solid #e0e0e0;">
+          <h1 style="margin: 0;">
+            <span style="color: #000;">PATH</span><span style="color: #f90000;">FINDER</span> <span style="color: #000;">PRO</span>
+          </h1>
+          <p style="color: #666; margin: 5px 0;">Loan Qualification Analysis</p>
+        </div>
+        <div style="padding: 20px;">
+          <p>Dear ${borrower.first_name || 'Valued Client'},</p>
+          <p>Please find below your personalized loan qualification analysis from ClearPath Utah Mortgage.</p>
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+          <div style="line-height: 1.6;">
+            ${borrower.ai_analysis.replace(/\n/g, '<br>')}
+          </div>
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+          <p>If you have any questions, please don't hesitate to reach out.</p>
+          <p>Best regards,<br>Kelly<br>ClearPath Utah Mortgage<br>(801) 891-1846<br>hello@clearpathutah.com</p>
+        </div>
+      </div>
+    `;
+
+    // Send to client
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
+      to: clientEmail,
+      cc: 'hello@clearpathutah.com', // Always CC Kelly
+      subject: `Your Loan Qualification Analysis - PathFinder Pro`,
+      html: analysisHtml
+    });
+
+    res.json({ success: true, message: `Email sent to ${clientEmail}` });
+  } catch (error) {
+    console.error('Email error:', error);
+    res.status(500).json({ error: 'Failed to send email. Please check SMTP configuration.' });
+  }
+});
+
 // Helper functions
 function buildAnalysisPrompt(borrower, calculations, knowledge) {
   return `You are a mortgage loan officer assistant analyzing a borrower's qualification profile.

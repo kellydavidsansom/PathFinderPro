@@ -17,8 +17,35 @@ document.addEventListener('DOMContentLoaded', () => {
   initDebtListeners();
   initPropertyCalculations();
   initCreditFlags();
+  initDateFormatting();
   loadBorrowerData();
 });
+
+// Date of Birth auto-formatting (04042000 -> 04/04/2000)
+function initDateFormatting() {
+  const dobFields = document.querySelectorAll('input[name="date_of_birth"], input[name="co_date_of_birth"]');
+
+  dobFields.forEach(field => {
+    field.addEventListener('blur', () => {
+      const value = field.value.replace(/\D/g, ''); // Remove non-digits
+
+      if (value.length === 8) {
+        // Format as MM/DD/YYYY
+        const formatted = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        field.value = formatted;
+        // Trigger save
+        scheduleAutoSave({ [field.name]: formatted });
+      } else if (value.length === 6) {
+        // Format as MM/DD/YY -> MM/DD/19YY or MM/DD/20YY
+        const year = parseInt(value.slice(4, 6));
+        const fullYear = year > 50 ? '19' + value.slice(4, 6) : '20' + value.slice(4, 6);
+        const formatted = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + fullYear;
+        field.value = formatted;
+        scheduleAutoSave({ [field.name]: formatted });
+      }
+    });
+  });
+}
 
 // Tab Navigation
 function initTabs() {
@@ -1010,7 +1037,9 @@ function updateCalculationDisplay(calc) {
 // AI Analysis
 async function generateAnalysis() {
   const btn = document.querySelector('[onclick="generateAnalysis()"]');
-  const analysisDiv = document.getElementById('aiAnalysis');
+  const analysisDiv = document.getElementById('analysisReport');
+  const downloadBtn = document.getElementById('downloadPdfBtn');
+  const emailBtn = document.getElementById('emailAnalysisBtn');
 
   btn.disabled = true;
   btn.textContent = 'Generating...';
@@ -1022,6 +1051,8 @@ async function generateAnalysis() {
 
     if (error) {
       analysisDiv.innerHTML = `<p class="text-muted">Error: ${error}</p>`;
+      downloadBtn.style.display = 'none';
+      emailBtn.style.display = 'none';
     } else {
       // Convert markdown-style headers and formatting
       const formatted = analysis
@@ -1030,14 +1061,96 @@ async function generateAnalysis() {
         .replace(/^## (.+)$/gm, '<h3>$1</h3>')
         .replace(/^# (.+)$/gm, '<h2>$1</h2>')
         .replace(/\n/g, '<br>');
-      analysisDiv.innerHTML = formatted;
+
+      // Add header with logo
+      analysisDiv.innerHTML = `
+        <div class="analysis-header">
+          <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
+          <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+        </div>
+        <div class="analysis-content">${formatted}</div>
+      `;
+
+      // Show download and email buttons
+      downloadBtn.style.display = 'inline-flex';
+      emailBtn.style.display = 'inline-flex';
     }
   } catch (error) {
     analysisDiv.innerHTML = `<p class="text-muted">Failed to generate analysis. Please check your API key.</p>`;
+    downloadBtn.style.display = 'none';
+    emailBtn.style.display = 'none';
   }
 
   btn.disabled = false;
   btn.textContent = 'Generate Analysis';
+}
+
+// Download analysis as PDF
+async function downloadAnalysisPDF() {
+  const btn = document.getElementById('downloadPdfBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating PDF...';
+
+  try {
+    const response = await fetch(`/api/analysis/${BORROWER_ID}/pdf`);
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PathFinder_Analysis_${BORROWER_ID}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } else {
+      alert('Failed to generate PDF. Please try again.');
+    }
+  } catch (error) {
+    alert('Failed to generate PDF. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Download PDF';
+}
+
+// Email analysis to client (and copy to Kelly)
+async function emailAnalysis() {
+  const btn = document.getElementById('emailAnalysisBtn');
+  const clientEmail = borrowerData.email;
+
+  if (!clientEmail) {
+    alert('Please enter the borrower\'s email address in the Borrower Info tab first.');
+    return;
+  }
+
+  if (!confirm(`Send analysis report to ${clientEmail}?`)) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  try {
+    const response = await fetch(`/api/analysis/${BORROWER_ID}/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientEmail })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(`Analysis report sent to ${clientEmail}`);
+    } else {
+      alert(result.error || 'Failed to send email. Please try again.');
+    }
+  } catch (error) {
+    alert('Failed to send email. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Email to Client';
 }
 
 // Chat

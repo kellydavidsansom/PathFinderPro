@@ -282,7 +282,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Calculation Sidebar */
 .calculation-sidebar {
-  background: var(--bg);
+  background: #f2f2f2;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: var(--space-lg);
@@ -293,7 +293,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .calculation-sidebar h4 {
   margin: 0 0 var(--space-md);
-  color: var(--primary);
+  color: #000000;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -319,11 +319,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .calc-total {
   font-size: 1rem;
-  color: var(--primary);
+  color: #000000;
 }
 
 .calc-total span:last-child {
   font-weight: 700;
+  color: #000000;
 }
 
 .calc-note {
@@ -656,7 +657,14 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-mono);
 }
 
-/* AI Analysis */
+.power-piti {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
+/* Claude Analysis */
 .ai-analysis {
   background: var(--bg-card);
   border-radius: 6px;
@@ -673,6 +681,49 @@ h1, h2, h3, h4, h5, h6 {
 
 .ai-analysis h1:first-child, .ai-analysis h2:first-child {
   margin-top: 0;
+}
+
+.analysis-header {
+  text-align: center;
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.analysis-logo {
+  width: 60px;
+  height: auto;
+  margin-bottom: var(--space-sm);
+}
+
+.analysis-title {
+  font-family: 'Myriad Pro', var(--font-title);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  margin: 0;
+}
+
+.analysis-title .path {
+  color: #000000;
+}
+
+.analysis-title .finder {
+  color: var(--red);
+}
+
+.analysis-title .pro {
+  color: #000000;
+}
+
+.analysis-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.analysis-content {
+  padding-top: var(--space-md);
 }
 
 /* Chat */
