@@ -630,30 +630,30 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.85rem;
 }
 
-/* Borrower Cards - Alternating colors */
+/* Borrower Cards - Subtle alternating tints */
 .borrower-card {
   border: 1px solid var(--blush);
   border-radius: 30px;
-  background: var(--sand);
+  background: white;
   padding: var(--space-lg);
   margin-bottom: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .borrower-card:nth-child(odd) {
-  background: var(--sand);
+  background: #FDFCFA;  /* Warm white */
 }
 
 .borrower-card:nth-child(even) {
-  background: var(--sage);
+  background: #F9FAF9;  /* Hint of sage */
 }
 
 .borrower-card:nth-child(3n) {
-  background: var(--blush);
+  background: #FDFAF8;  /* Hint of blush */
 }
 
 .borrower-card:nth-child(4n) {
-  background: var(--cloud);
+  background: #FBFAF7;  /* Hint of sand */
 }
 
 .borrower-card:hover {
