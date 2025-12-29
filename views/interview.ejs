@@ -9,17 +9,17 @@
 <body>
   <header class="header">
     <div class="header-content">
-      <div class="logo">
-        <a href="/" class="logo-link">
-          <h1>PathFinder Pro</h1>
-          <span class="tagline">ClearPath Utah Mortgage</span>
-        </a>
-      </div>
+      <a href="/" class="logo-link">
+        <div class="logo">
+          <img src="/images/logo.png" alt="PathFinder Pro" class="logo-image">
+          <h1 class="logo-text"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h1>
+        </div>
+      </a>
       <div class="borrower-name" id="headerBorrowerName">
         <%= borrower.first_name || 'New' %> <%= borrower.last_name || 'Borrower' %>
       </div>
       <div class="header-actions">
-        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Knowledge Repository">
+        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -76,7 +76,59 @@
           </div>
           <div class="form-group">
             <label>State</label>
-            <input type="text" name="state" value="<%= borrower.state || '' %>" maxlength="2" data-autosave>
+            <select name="state" data-autosave>
+              <option value="UT" <%= (!borrower.state || borrower.state === 'UT') ? 'selected' : '' %>>Utah</option>
+              <option value="AL" <%= borrower.state === 'AL' ? 'selected' : '' %>>Alabama</option>
+              <option value="AK" <%= borrower.state === 'AK' ? 'selected' : '' %>>Alaska</option>
+              <option value="AZ" <%= borrower.state === 'AZ' ? 'selected' : '' %>>Arizona</option>
+              <option value="AR" <%= borrower.state === 'AR' ? 'selected' : '' %>>Arkansas</option>
+              <option value="CA" <%= borrower.state === 'CA' ? 'selected' : '' %>>California</option>
+              <option value="CO" <%= borrower.state === 'CO' ? 'selected' : '' %>>Colorado</option>
+              <option value="CT" <%= borrower.state === 'CT' ? 'selected' : '' %>>Connecticut</option>
+              <option value="DE" <%= borrower.state === 'DE' ? 'selected' : '' %>>Delaware</option>
+              <option value="FL" <%= borrower.state === 'FL' ? 'selected' : '' %>>Florida</option>
+              <option value="GA" <%= borrower.state === 'GA' ? 'selected' : '' %>>Georgia</option>
+              <option value="HI" <%= borrower.state === 'HI' ? 'selected' : '' %>>Hawaii</option>
+              <option value="ID" <%= borrower.state === 'ID' ? 'selected' : '' %>>Idaho</option>
+              <option value="IL" <%= borrower.state === 'IL' ? 'selected' : '' %>>Illinois</option>
+              <option value="IN" <%= borrower.state === 'IN' ? 'selected' : '' %>>Indiana</option>
+              <option value="IA" <%= borrower.state === 'IA' ? 'selected' : '' %>>Iowa</option>
+              <option value="KS" <%= borrower.state === 'KS' ? 'selected' : '' %>>Kansas</option>
+              <option value="KY" <%= borrower.state === 'KY' ? 'selected' : '' %>>Kentucky</option>
+              <option value="LA" <%= borrower.state === 'LA' ? 'selected' : '' %>>Louisiana</option>
+              <option value="ME" <%= borrower.state === 'ME' ? 'selected' : '' %>>Maine</option>
+              <option value="MD" <%= borrower.state === 'MD' ? 'selected' : '' %>>Maryland</option>
+              <option value="MA" <%= borrower.state === 'MA' ? 'selected' : '' %>>Massachusetts</option>
+              <option value="MI" <%= borrower.state === 'MI' ? 'selected' : '' %>>Michigan</option>
+              <option value="MN" <%= borrower.state === 'MN' ? 'selected' : '' %>>Minnesota</option>
+              <option value="MS" <%= borrower.state === 'MS' ? 'selected' : '' %>>Mississippi</option>
+              <option value="MO" <%= borrower.state === 'MO' ? 'selected' : '' %>>Missouri</option>
+              <option value="MT" <%= borrower.state === 'MT' ? 'selected' : '' %>>Montana</option>
+              <option value="NE" <%= borrower.state === 'NE' ? 'selected' : '' %>>Nebraska</option>
+              <option value="NV" <%= borrower.state === 'NV' ? 'selected' : '' %>>Nevada</option>
+              <option value="NH" <%= borrower.state === 'NH' ? 'selected' : '' %>>New Hampshire</option>
+              <option value="NJ" <%= borrower.state === 'NJ' ? 'selected' : '' %>>New Jersey</option>
+              <option value="NM" <%= borrower.state === 'NM' ? 'selected' : '' %>>New Mexico</option>
+              <option value="NY" <%= borrower.state === 'NY' ? 'selected' : '' %>>New York</option>
+              <option value="NC" <%= borrower.state === 'NC' ? 'selected' : '' %>>North Carolina</option>
+              <option value="ND" <%= borrower.state === 'ND' ? 'selected' : '' %>>North Dakota</option>
+              <option value="OH" <%= borrower.state === 'OH' ? 'selected' : '' %>>Ohio</option>
+              <option value="OK" <%= borrower.state === 'OK' ? 'selected' : '' %>>Oklahoma</option>
+              <option value="OR" <%= borrower.state === 'OR' ? 'selected' : '' %>>Oregon</option>
+              <option value="PA" <%= borrower.state === 'PA' ? 'selected' : '' %>>Pennsylvania</option>
+              <option value="RI" <%= borrower.state === 'RI' ? 'selected' : '' %>>Rhode Island</option>
+              <option value="SC" <%= borrower.state === 'SC' ? 'selected' : '' %>>South Carolina</option>
+              <option value="SD" <%= borrower.state === 'SD' ? 'selected' : '' %>>South Dakota</option>
+              <option value="TN" <%= borrower.state === 'TN' ? 'selected' : '' %>>Tennessee</option>
+              <option value="TX" <%= borrower.state === 'TX' ? 'selected' : '' %>>Texas</option>
+              <option value="VT" <%= borrower.state === 'VT' ? 'selected' : '' %>>Vermont</option>
+              <option value="VA" <%= borrower.state === 'VA' ? 'selected' : '' %>>Virginia</option>
+              <option value="WA" <%= borrower.state === 'WA' ? 'selected' : '' %>>Washington</option>
+              <option value="WV" <%= borrower.state === 'WV' ? 'selected' : '' %>>West Virginia</option>
+              <option value="WI" <%= borrower.state === 'WI' ? 'selected' : '' %>>Wisconsin</option>
+              <option value="WY" <%= borrower.state === 'WY' ? 'selected' : '' %>>Wyoming</option>
+              <option value="DC" <%= borrower.state === 'DC' ? 'selected' : '' %>>Washington DC</option>
+            </select>
           </div>
           <div class="form-group">
             <label>ZIP</label>
@@ -87,7 +139,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Date of Birth</label>
-            <input type="date" name="date_of_birth" value="<%= borrower.date_of_birth || '' %>" data-autosave>
+            <input type="text" name="date_of_birth" value="<%= borrower.date_of_birth || '' %>" placeholder="MM/DD/YYYY" autocomplete="off" data-autosave>
           </div>
           <div class="form-group">
             <label>SSN</label>
@@ -216,7 +268,7 @@
           <div class="form-grid">
             <div class="form-group">
               <label>Date of Birth</label>
-              <input type="date" name="co_date_of_birth" value="<%= borrower.co_date_of_birth || '' %>" data-autosave>
+              <input type="text" name="co_date_of_birth" value="<%= borrower.co_date_of_birth || '' %>" placeholder="MM/DD/YYYY" autocomplete="off" data-autosave>
             </div>
             <div class="form-group">
               <label>SSN</label>

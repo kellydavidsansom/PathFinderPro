@@ -1,7 +1,7 @@
 /* PathFinder Pro - ClearPath Utah Mortgage */
 /* Professional loan qualification tool styling */
 
-/* Import Google Fonts */
+/* Import Google Fonts - including Myriad Pro fallback */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
 
 :root {
@@ -11,15 +11,16 @@
   --primary-light: #a8a69c;
   --accent: #b8b399;
   --accent-light: #ccc8b3;
+  --red: #f90000;
 
   /* Neutrals */
-  --bg: #f8f7f5;
-  --bg-card: #ffffff;
+  --bg: #ffffff;
+  --bg-card: #f2f2f2;
   --border: #e2e0d8;
   --border-dark: #cbc9c1;
   --text: #3d3d3d;
   --text-muted: #6e6c62;
-  --text-light: #8e8c82;
+  --text-light: #a4a4a4;
 
   /* Status Colors */
   --success: #7a9e7a;
@@ -34,7 +35,7 @@
   --space-xl: 2rem;
 
   /* Typography */
-  --font-title: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-title: 'Montserrat', 'Myriad Pro', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Merriweather', Georgia, serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Mono', monospace;
 }
@@ -59,45 +60,78 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
-/* Header */
+/* Header - New White Style */
 .header {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: white;
+  background: #ffffff;
+  color: var(--text);
   padding: var(--space-md) var(--space-xl);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: relative;
 }
 
 .header-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
 }
 
-.logo h1 {
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logo-image {
+  width: 80px;
+  height: auto;
+  margin-bottom: var(--space-sm);
+}
+
+.logo-text {
+  font-family: 'Myriad Pro', var(--font-title);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+}
+
+.logo-text .path {
+  color: #000000;
+}
+
+.logo-text .finder {
+  color: var(--red);
+}
+
+.logo-text .pro {
+  color: #000000;
 }
 
 .logo-link {
-  color: white;
+  color: inherit;
   text-decoration: none;
 }
 
 .tagline {
-  font-size: 0.75rem;
-  opacity: 0.8;
-  display: block;
+  display: none; /* Hidden per request */
 }
 
 .borrower-name {
   font-size: 1.1rem;
   font-weight: 500;
+  color: var(--text);
+  margin-top: var(--space-sm);
 }
 
 .header-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   gap: var(--space-sm);
 }
@@ -110,7 +144,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--bg-card);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font-title);
   font-size: 0.875rem;
@@ -121,19 +155,31 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn:hover {
-  background: var(--bg);
+  background: var(--bg-card);
   border-color: var(--border-dark);
 }
 
 .btn-primary {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--red);
+  border-color: var(--red);
   color: white;
+  text-transform: uppercase;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background: #d50000;
+  border-color: #d50000;
+}
+
+.btn-continue {
+  background: var(--red);
+  border-color: var(--red);
+  color: white;
+}
+
+.btn-continue:hover {
+  background: #d50000;
+  border-color: #d50000;
 }
 
 .btn-danger {
@@ -158,46 +204,47 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-icon {
   padding: var(--space-sm);
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: #000000;
 }
 
 .btn-icon:hover {
-  background: rgba(255,255,255,0.2);
+  background: var(--bg-card);
 }
 
-/* Tab Navigation */
+/* Tab Navigation - Updated with borders */
 .tab-nav {
   display: flex;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-  padding: 0 var(--space-xl);
-  gap: var(--space-xs);
+  background: var(--bg);
+  padding: var(--space-md) var(--space-xl);
+  gap: var(--space-sm);
   overflow-x: auto;
 }
 
 .tab {
   padding: var(--space-md) var(--space-lg);
-  border: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
   font-family: var(--font-title);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .tab:hover {
   color: var(--primary);
+  border-color: var(--primary);
 }
 
 .tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(249, 0, 0, 0.05);
 }
 
 /* Main Content */
@@ -235,7 +282,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Calculation Sidebar */
 .calculation-sidebar {
-  background: var(--bg-card);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: var(--space-lg);
@@ -287,7 +334,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Form Sections */
 .form-section {
-  background: var(--bg-card);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: var(--space-lg);
@@ -358,7 +405,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .form-group input[readonly] {
-  background: var(--bg);
+  background: var(--bg-card);
   color: var(--text-muted);
 }
 
@@ -366,7 +413,7 @@ h1, h2, h3, h4, h5, h6 {
 .toggle-group {
   display: flex;
   gap: 2px;
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
   padding: 2px;
 }
@@ -402,7 +449,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .employer-block,
 .other-income-block {
-  background: var(--bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: var(--space-md);
@@ -459,6 +506,46 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.85rem;
 }
 
+/* Borrower Cards - New Card Style */
+.borrower-card {
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  background: var(--bg-card);
+  padding: var(--space-lg);
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.borrower-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.borrower-card-info {
+  display: flex;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.borrower-card-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.borrower-card-detail {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.borrower-card-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
 /* Credit Tab */
 .credit-questions {
   display: flex;
@@ -471,7 +558,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md);
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
 }
 
@@ -498,7 +585,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .summary-card {
-  background: var(--bg-card);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: var(--space-lg);
@@ -550,7 +637,7 @@ h1, h2, h3, h4, h5, h6 {
 .power-item {
   text-align: center;
   padding: var(--space-md);
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
 }
 
@@ -571,7 +658,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* AI Analysis */
 .ai-analysis {
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
   padding: var(--space-lg);
   line-height: 1.7;
@@ -594,7 +681,7 @@ h1, h2, h3, h4, h5, h6 {
   overflow-y: auto;
   margin-bottom: var(--space-md);
   padding: var(--space-md);
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
 }
 
@@ -611,7 +698,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .chat-assistant {
-  background: var(--bg-card);
+  background: var(--bg);
   border: 1px solid var(--border);
   margin-right: 20%;
 }
@@ -663,7 +750,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-content {
-  background: var(--bg-card);
+  background: var(--bg);
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
@@ -713,7 +800,7 @@ h1, h2, h3, h4, h5, h6 {
 .knowledge-tab {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
@@ -787,7 +874,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .status-draft {
-  background: var(--bg);
+  background: var(--bg-card);
   color: var(--text-muted);
 }
 
@@ -854,18 +941,19 @@ h1, h2, h3, h4, h5, h6 {
 
 .error-page pre {
   text-align: left;
-  background: var(--bg);
+  background: var(--bg-card);
   padding: var(--space-lg);
   border-radius: 6px;
   overflow-x: auto;
   font-size: 0.8rem;
 }
 
-/* Footer */
+/* Footer - White with gray text */
 .footer {
   text-align: center;
   padding: var(--space-lg);
-  color: var(--text-muted);
+  background: #ffffff;
+  color: #a4a4a4;
   font-size: 0.85rem;
   border-top: 1px solid var(--border);
   margin-top: var(--space-xl);
@@ -925,5 +1013,15 @@ h1, h2, h3, h4, h5, h6 {
     order: 3;
     width: 100%;
     text-align: center;
+  }
+
+  .borrower-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .borrower-card-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> - ClearPath Utah Mortgage</title>
+  <title><%= title %></title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <header class="header">
     <div class="header-content">
-      <div class="logo">
-        <h1>PathFinder Pro</h1>
-        <span class="tagline">ClearPath Utah Mortgage</span>
-      </div>
+      <a href="/" class="logo-link">
+        <div class="logo">
+          <img src="/images/logo.png" alt="PathFinder Pro" class="logo-image">
+          <h1 class="logo-text"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h1>
+        </div>
+      </a>
       <div class="header-actions">
-        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Knowledge Repository">
+        <button class="btn btn-icon" onclick="openKnowledgeModal()" title="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -33,60 +35,46 @@
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Start New Interview
+          START NEW INTERVIEW
         </a>
       </div>
 
       <% if (borrowers.length > 0) { %>
       <div class="borrower-list">
         <h3>Recent Borrowers</h3>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Purchase Price</th>
-              <th>Credit Score</th>
-              <th>Last Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% borrowers.forEach(b => { %>
-            <tr>
-              <td>
-                <strong><%= b.first_name || 'New' %> <%= b.last_name || 'Borrower' %></strong>
-              </td>
-              <td>
+        <% borrowers.forEach(b => { %>
+        <div class="borrower-card">
+          <div class="borrower-card-content">
+            <div class="borrower-card-info">
+              <div class="borrower-card-name">
+                <%= b.first_name || 'New' %> <%= b.last_name || 'Borrower' %>
+              </div>
+              <div class="borrower-card-detail">
                 <span class="status-badge status-<%= b.status %>">
                   <%= b.status.charAt(0).toUpperCase() + b.status.slice(1) %>
                 </span>
-              </td>
-              <td>
+              </div>
+              <div class="borrower-card-detail">
                 <% if (b.purchase_price) { %>
                   $<%= Number(b.purchase_price).toLocaleString() %>
                 <% } else { %>
                   <span class="text-muted">-</span>
                 <% } %>
-              </td>
-              <td>
-                <% if (b.credit_score) { %>
-                  <%= b.credit_score %>
-                <% } else { %>
-                  <span class="text-muted">-</span>
-                <% } %>
-              </td>
-              <td>
+              </div>
+              <div class="borrower-card-detail">
+                Credit: <% if (b.credit_score) { %><%= b.credit_score %><% } else { %><span class="text-muted">-</span><% } %>
+              </div>
+              <div class="borrower-card-detail">
                 <%= new Date(b.updated_at).toLocaleDateString() %>
-              </td>
-              <td>
-                <a href="/interview/<%= b.id %>" class="btn btn-sm">Continue</a>
-                <button onclick="deleteBorrower(<%= b.id %>)" class="btn btn-sm btn-danger">Delete</button>
-              </td>
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
+              </div>
+            </div>
+            <div class="borrower-card-actions">
+              <a href="/interview/<%= b.id %>" class="btn btn-sm btn-continue">Continue</a>
+              <button onclick="deleteBorrower(<%= b.id %>)" class="btn btn-sm btn-danger">Delete</button>
+            </div>
+          </div>
+        </div>
+        <% }) %>
       </div>
       <% } else { %>
       <div class="empty-state">
