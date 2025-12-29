@@ -68,9 +68,9 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
-/* Header - Sand/Cream Style */
+/* Header - White Style */
 .header {
-  background: var(--sand);
+  background: white;
   color: var(--text);
   padding: var(--space-md) var(--space-xl);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -222,10 +222,10 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-card);
 }
 
-/* Tab Navigation - Sage accent */
+/* Tab Navigation - White background */
 .tab-nav {
   display: flex;
-  background: var(--sand);
+  background: white;
   padding: var(--space-md) var(--space-xl);
   gap: var(--space-sm);
   overflow-x: auto;
@@ -253,9 +253,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .tab.active {
-  color: var(--primary-dark);
-  border-color: var(--sage);
-  background: var(--sage);
+  color: white;
+  border-color: var(--primary);
+  background: var(--primary);
 }
 
 /* Main Content */
@@ -355,7 +355,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-section h3 {
   margin: 0 0 var(--space-lg);
-  color: var(--primary);
+  color: var(--primary-dark);
   font-size: 1.1rem;
 }
 
@@ -363,6 +363,24 @@ h1, h2, h3, h4, h5, h6 {
   margin: var(--space-lg) 0 var(--space-md);
   color: var(--text);
   font-size: 0.9rem;
+}
+
+/* Borrower Section - Sand background */
+.form-section.borrower-section,
+.form-section:has(h3:first-child:not(:empty)) {
+  background: var(--sand);
+  border-color: var(--blush);
+}
+
+/* Co-Borrower Section - Sage background */
+.form-section.coborrower-section,
+#coBorrowerSection {
+  background: var(--sage);
+  border-color: var(--primary-light);
+}
+
+#coBorrowerSection h3 {
+  color: var(--primary-dark);
 }
 
 .section-header {
@@ -444,8 +462,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .toggle-btn.active {
-  background: var(--sage);
-  color: var(--primary-dark);
+  background: var(--primary);
+  color: white;
 }
 
 .toggle-btn:hover:not(.active) {
@@ -612,18 +630,34 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.85rem;
 }
 
-/* Borrower Cards - New Card Style */
+/* Borrower Cards - Alternating colors */
 .borrower-card {
   border: 1px solid var(--blush);
   border-radius: 30px;
-  background: white;
+  background: var(--sand);
   padding: var(--space-lg);
   margin-bottom: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
+.borrower-card:nth-child(odd) {
+  background: var(--sand);
+}
+
+.borrower-card:nth-child(even) {
+  background: var(--sage);
+}
+
+.borrower-card:nth-child(3n) {
+  background: var(--blush);
+}
+
+.borrower-card:nth-child(4n) {
+  background: var(--cloud);
+}
+
 .borrower-card:hover {
-  border-color: var(--sage);
+  border-color: var(--primary);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
@@ -1118,11 +1152,11 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.8rem;
 }
 
-/* Footer - Sand background */
+/* Footer - White background */
 .footer {
   text-align: center;
   padding: var(--space-lg);
-  background: var(--sand);
+  background: white;
   color: var(--text-muted);
   font-size: 0.85rem;
   border-top: 1px solid var(--blush);
