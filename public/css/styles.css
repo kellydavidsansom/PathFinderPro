@@ -1045,6 +1045,77 @@ h1, h2, h3, h4, h5, h6 {
   padding-top: var(--space-md);
 }
 
+/* Analysis Report Footer */
+.analysis-footer {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+
+.analysis-footer-content {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-lg);
+  align-items: center;
+}
+
+.analysis-footer-logo {
+  width: 60px;
+  height: auto;
+}
+
+.analysis-footer-center {
+  text-align: center;
+}
+
+.analysis-footer-company {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: var(--space-xs);
+}
+
+.analysis-footer-company .clear {
+  color: #5B9BD5;
+}
+
+.analysis-footer-company .path-text {
+  color: var(--text);
+}
+
+.analysis-footer-address {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.analysis-footer-address a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.analysis-footer-address a:hover {
+  text-decoration: underline;
+}
+
+.analysis-footer-nmls {
+  font-size: 0.7rem;
+  color: var(--text);
+  margin-top: var(--space-xs);
+  font-weight: 500;
+}
+
+.analysis-footer-disclaimer {
+  font-size: 0.65rem;
+  color: var(--text-light);
+  margin-top: var(--space-xs);
+  line-height: 1.4;
+}
+
+.analysis-footer-reviews {
+  max-width: 150px;
+  height: auto;
+}
+
 /* Chat */
 .chat-history {
   max-height: 300px;
