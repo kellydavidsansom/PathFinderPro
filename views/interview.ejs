@@ -936,7 +936,13 @@
               <% if (borrower.ai_analysis) { %>
                 <div class="analysis-header">
                   <img src="/images/logo.png" alt="PathFinder Pro" class="analysis-logo">
-                  <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+                  <div class="analysis-header-text">
+                    <h2 class="analysis-title"><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h2>
+                    <div class="analysis-subtitle">by ClearPath Utah Mortgage</div>
+                  </div>
+                </div>
+                <div class="analysis-agent-info">
+                  <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508-3146 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
                 </div>
                 <div class="analysis-content">
                   <%- borrower.ai_analysis.replace(/\n/g, '<br>') %>
