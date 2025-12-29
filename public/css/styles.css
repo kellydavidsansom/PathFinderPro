@@ -1225,8 +1225,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .letter-signature {
-  font-style: italic;
-  color: var(--primary-dark);
   line-height: 1.8;
 }
 
@@ -1260,11 +1258,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .analysis-footer-company .clear {
-  color: #5B9BD5;
+  color: #8f8c83;
 }
 
 .analysis-footer-company .path-text {
-  color: var(--text);
+  color: #b9b399;
+}
+
+.analysis-footer-company .utah-mortgage {
+  color: #8f8c83;
 }
 
 .analysis-footer-address {
@@ -1675,11 +1677,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .footer-company-name .clear {
-  color: #5B9BD5;
+  color: #8f8c83;
 }
 
 .footer-company-name .path-text {
-  color: var(--text);
+  color: #b9b399;
+}
+
+.footer-company-name .utah-mortgage {
+  color: #8f8c83;
 }
 
 .footer-address {

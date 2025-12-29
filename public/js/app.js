@@ -1239,7 +1239,15 @@ function renderClientLetter(letter) {
   // Format greeting with phone on next line
   const greetingParts = (letter.greeting || '').split('\n');
   const greetingName = greetingParts[0] || '';
-  const greetingPhone = greetingParts[1] || '';
+  let greetingPhone = greetingParts[1] || '';
+
+  // Format phone number as (801) 555-5555
+  if (greetingPhone) {
+    const digits = greetingPhone.replace(/\D/g, '');
+    if (digits.length === 10) {
+      greetingPhone = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+    }
+  }
 
   // Format signature
   const signatureParts = (letter.signature || '').split('\n');
@@ -1286,7 +1294,7 @@ function renderClientLetter(letter) {
           <img src="https://clearpathutah.com/wp-content/uploads/2025/07/Clear-Path-Mortgage-Logo-300x300.gif" alt="ClearPath Utah Mortgage" class="analysis-footer-logo">
         </div>
         <div class="analysis-footer-center">
-          <div class="analysis-footer-company"><span class="clear">CLEAR</span><span class="path-text">PATH</span> UTAH MORTGAGE</div>
+          <div class="analysis-footer-company"><span class="clear">CLEAR</span><span class="path-text">PATH</span> <span class="utah-mortgage">UTAH MORTGAGE</span></div>
           <div class="analysis-footer-address">
             10168 South 2505 East, Sandy, UT 84092<br>
             <a href="tel:8018911846">(801) 891-1846</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
