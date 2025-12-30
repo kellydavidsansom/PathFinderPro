@@ -957,26 +957,33 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
 
       res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
     } else {
-      // Fallback to nodemailer/SMTP
+      // Use nodemailer/SMTP (works with Mailgun SMTP)
       const nodemailer = require('nodemailer');
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: process.env.SMTP_PORT || 587,
+        host: process.env.SMTP_HOST || 'smtp.mailgun.org',
+        port: parseInt(process.env.SMTP_PORT) || 587,
         secure: false,
+        requireTLS: true,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
+        },
+        tls: {
+          rejectUnauthorized: false
         }
       });
 
+      console.log('Sending email via SMTP to:', recipients.join(', '));
+
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
+        from: process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>',
         to: recipients.join(', '),
         cc: 'hello@clearpathutah.com',
         subject: 'Your Loan Qualification Analysis - PathFinder Pro',
         html: analysisHtml
       });
 
+      console.log('Email sent successfully');
       res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
     }
   } catch (error) {
