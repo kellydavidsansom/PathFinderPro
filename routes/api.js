@@ -947,21 +947,6 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       }
       mailgunDomain = mailgunDomain || 'mg.clearpathutah.com';
 
-      const formData = require('form-data');
-      const Mailgun = require('mailgun.js');
-      const mailgun = new Mailgun(formData);
-
-      // Check if EU account (set MAILGUN_EU=true in env if EU)
-      const isEU = process.env.MAILGUN_EU === 'true';
-      const mg = mailgun.client({
-        username: 'api',
-        key: process.env.MAILGUN_API_KEY,
-        url: isEU ? 'https://api.eu.mailgun.net' : 'https://api.mailgun.net'
-      });
-
-      console.log('Mailgun API Key (first 10 chars):', process.env.MAILGUN_API_KEY?.substring(0, 10) + '...');
-      console.log('Using EU endpoint:', isEU);
-
       const fromAddress = process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>';
 
       console.log('Sending email via Mailgun API');
@@ -969,13 +954,33 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       console.log('From:', fromAddress);
       console.log('To:', recipients);
 
-      await mg.messages.create(mailgunDomain, {
-        from: fromAddress,
-        to: recipients,
-        cc: 'hello@clearpathutah.com',
-        subject: 'Your Loan Qualification Analysis - PathFinder Pro',
-        html: analysisHtml
+      // Use direct HTTP request to Mailgun API
+      const fetch = (await import('node-fetch')).default;
+      const apiKey = process.env.MAILGUN_API_KEY;
+      const auth = Buffer.from(`api:${apiKey}`).toString('base64');
+
+      const formBody = new URLSearchParams();
+      formBody.append('from', fromAddress);
+      recipients.forEach(r => formBody.append('to', r));
+      formBody.append('cc', 'hello@clearpathutah.com');
+      formBody.append('subject', 'Your Loan Qualification Analysis - PathFinder Pro');
+      formBody.append('html', analysisHtml);
+
+      const response = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formBody.toString()
       });
+
+      const result = await response.json();
+      console.log('Mailgun response:', response.status, result);
+
+      if (!response.ok) {
+        throw new Error(result.message || `Mailgun error: ${response.status}`);
+      }
 
       console.log('Email sent successfully via Mailgun API');
       res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
