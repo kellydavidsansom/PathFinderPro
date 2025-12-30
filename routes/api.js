@@ -830,15 +830,14 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
         doc.moveDown(0.8);
       }
 
-      // Signature
-      if (letter.signature) {
-        doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        // Just print signature lines compactly
-        const sigLines = letter.signature.split('\n').filter(l => l.trim());
-        sigLines.forEach(line => {
-          doc.text(line.trim(), margin);
-        });
-      }
+      // Signature block
+      doc.fontSize(11).fillColor('#333333').font('Helvetica');
+      doc.text('Warmly,', margin);
+      doc.moveDown(0.5);
+      doc.text('Kelly Sansom', margin);
+      doc.text('Your Mortgage Specialist', margin);
+      doc.text('(801) 891-1846', margin);
+      doc.text('hello@clearpathutah.com', margin);
     } else {
       // Old format
       const clean = borrower.ai_analysis.replace(/[#*]/g, '');
