@@ -1181,6 +1181,16 @@ async function generateAnalysis() {
       // Show download and email buttons
       downloadBtn.style.display = 'inline-flex';
       emailBtn.style.display = 'inline-flex';
+
+      // Show co-borrower checkbox if there's a co-borrower with email
+      const coBorrowerOption = document.getElementById('coBorrowerEmailOption');
+      const coEmailInput = document.querySelector('[name="co_email"]');
+      const hasCoBorrower = document.querySelector('[name="has_coborrower"]')?.checked;
+      if (coBorrowerOption && hasCoBorrower && coEmailInput && coEmailInput.value.trim()) {
+        coBorrowerOption.style.display = 'inline-flex';
+      } else if (coBorrowerOption) {
+        coBorrowerOption.style.display = 'none';
+      }
     }
   } catch (error) {
     analysisDiv.innerHTML = `<p class="text-muted">Failed to generate analysis. Please check your API key.</p>`;
@@ -1320,14 +1330,28 @@ function downloadAnalysisPDF() {
 // Email analysis to client (and copy to Kelly)
 async function emailAnalysis() {
   const btn = document.getElementById('emailAnalysisBtn');
-  const clientEmail = borrowerData.email;
+
+  // Read email directly from form input
+  const emailInput = document.querySelector('[name="email"]');
+  const clientEmail = emailInput ? emailInput.value.trim() : '';
 
   if (!clientEmail) {
     alert('Please enter the borrower\'s email address in the Borrower Info tab first.');
     return;
   }
 
-  if (!confirm(`Send analysis report to ${clientEmail}?`)) {
+  // Check if co-borrower should be included
+  const includeCoBorrower = document.getElementById('includeCoBorrower')?.checked;
+  const coEmailInput = document.querySelector('[name="co_email"]');
+  const coBorrowerEmail = includeCoBorrower && coEmailInput ? coEmailInput.value.trim() : '';
+
+  // Build confirmation message
+  let confirmMsg = `Send analysis report to ${clientEmail}?`;
+  if (coBorrowerEmail) {
+    confirmMsg = `Send analysis report to:\n• ${clientEmail}\n• ${coBorrowerEmail}`;
+  }
+
+  if (!confirm(confirmMsg)) {
     return;
   }
 
@@ -1338,13 +1362,17 @@ async function emailAnalysis() {
     const response = await fetch(`/api/analysis/${BORROWER_ID}/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientEmail })
+      body: JSON.stringify({ clientEmail, coBorrowerEmail })
     });
 
     const result = await response.json();
 
     if (result.success) {
-      alert(`Analysis report sent to ${clientEmail}`);
+      let successMsg = `Analysis report sent to ${clientEmail}`;
+      if (coBorrowerEmail) {
+        successMsg += ` and ${coBorrowerEmail}`;
+      }
+      alert(successMsg);
     } else {
       alert(result.error || 'Failed to send email. Please try again.');
     }

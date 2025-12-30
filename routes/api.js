@@ -897,7 +897,7 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 router.post('/analysis/:borrowerId/email', async (req, res) => {
   const database = db.getDb();
   const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
-  const { clientEmail } = req.body;
+  const { clientEmail, coBorrowerEmail } = req.body;
 
   if (!borrower || !borrower.ai_analysis) {
     return res.status(404).json({ error: 'Analysis not found' });
@@ -944,16 +944,22 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       </div>
     `;
 
-    // Send to client
+    // Build recipient list
+    const recipients = [clientEmail];
+    if (coBorrowerEmail && coBorrowerEmail.trim()) {
+      recipients.push(coBorrowerEmail.trim());
+    }
+
+    // Send to client (and co-borrower if included)
     await transporter.sendMail({
       from: process.env.SMTP_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
-      to: clientEmail,
+      to: recipients.join(', '),
       cc: 'hello@clearpathutah.com', // Always CC Kelly
       subject: `Your Loan Qualification Analysis - PathFinder Pro`,
       html: analysisHtml
     });
 
-    res.json({ success: true, message: `Email sent to ${clientEmail}` });
+    res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
   } catch (error) {
     console.error('Email error:', error);
     res.status(500).json({ error: 'Failed to send email. Please check SMTP configuration.' });
