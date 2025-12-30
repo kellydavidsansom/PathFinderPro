@@ -953,11 +953,13 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       console.log('Domain:', mailgunDomain);
       console.log('From:', fromAddress);
       console.log('To:', recipients);
-      console.log('API Key length:', process.env.MAILGUN_API_KEY?.length);
+      console.log('MAILGUN_API_KEY length:', process.env.MAILGUN_API_KEY?.length);
+      console.log('SMTP_PASS length:', process.env.SMTP_PASS?.length);
 
       // Use direct HTTP request to Mailgun API
       const fetch = (await import('node-fetch')).default;
-      const apiKey = process.env.MAILGUN_API_KEY;
+      // Use SMTP_PASS as it's a valid Mailgun sending key
+      const apiKey = process.env.SMTP_PASS;
       const apiUrl = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
       console.log('API URL:', apiUrl);
 
