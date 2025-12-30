@@ -937,8 +937,16 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
   }
 
   try {
-    // Check if Mailgun is configured
-    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+    // Use Mailgun API (preferred)
+    if (process.env.MAILGUN_API_KEY) {
+      // Get domain from MAILGUN_DOMAIN or extract from SMTP_USER (postmaster@mg.domain.com)
+      let mailgunDomain = process.env.MAILGUN_DOMAIN;
+      if (!mailgunDomain && process.env.SMTP_USER) {
+        const match = process.env.SMTP_USER.match(/@(.+)$/);
+        if (match) mailgunDomain = match[1];
+      }
+      mailgunDomain = mailgunDomain || 'mg.clearpathutah.com';
+
       const formData = require('form-data');
       const Mailgun = require('mailgun.js');
       const mailgun = new Mailgun(formData);
@@ -947,17 +955,25 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
         key: process.env.MAILGUN_API_KEY
       });
 
-      await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-        from: process.env.MAILGUN_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
+      const fromAddress = process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>';
+
+      console.log('Sending email via Mailgun API');
+      console.log('Domain:', mailgunDomain);
+      console.log('From:', fromAddress);
+      console.log('To:', recipients);
+
+      await mg.messages.create(mailgunDomain, {
+        from: fromAddress,
         to: recipients,
         cc: 'hello@clearpathutah.com',
         subject: 'Your Loan Qualification Analysis - PathFinder Pro',
         html: analysisHtml
       });
 
+      console.log('Email sent successfully via Mailgun API');
       res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
     } else {
-      // Use nodemailer/SMTP (works with Mailgun SMTP)
+      // Fallback to nodemailer/SMTP
       const nodemailer = require('nodemailer');
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.mailgun.org',
@@ -967,13 +983,8 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
-        },
-        tls: {
-          rejectUnauthorized: false
         }
       });
-
-      console.log('Sending email via SMTP to:', recipients.join(', '));
 
       await transporter.sendMail({
         from: process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>',
@@ -983,7 +994,6 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
         html: analysisHtml
       });
 
-      console.log('Email sent successfully');
       res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
     }
   } catch (error) {
