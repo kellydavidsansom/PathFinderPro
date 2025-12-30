@@ -949,14 +949,18 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
 
       const fromAddress = process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>';
 
-      console.log('Sending email via Mailgun API');
+      console.log('=== Mailgun Email Request ===');
       console.log('Domain:', mailgunDomain);
       console.log('From:', fromAddress);
       console.log('To:', recipients);
+      console.log('API Key length:', process.env.MAILGUN_API_KEY?.length);
 
       // Use direct HTTP request to Mailgun API
       const fetch = (await import('node-fetch')).default;
       const apiKey = process.env.MAILGUN_API_KEY;
+      const apiUrl = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
+      console.log('API URL:', apiUrl);
+
       const auth = Buffer.from(`api:${apiKey}`).toString('base64');
 
       const formBody = new URLSearchParams();
@@ -966,7 +970,7 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       formBody.append('subject', 'Your Loan Qualification Analysis - PathFinder Pro');
       formBody.append('html', analysisHtml);
 
-      const response = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${auth}`,
@@ -976,7 +980,9 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       });
 
       const responseText = await response.text();
-      console.log('Mailgun response:', response.status, responseText);
+      console.log('Mailgun response status:', response.status);
+      console.log('Mailgun response body:', responseText);
+      console.log('Mailgun response headers:', Object.fromEntries(response.headers));
 
       if (!response.ok) {
         throw new Error(`Mailgun error ${response.status}: ${responseText}`);
