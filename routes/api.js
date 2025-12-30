@@ -616,18 +616,28 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
       ? `PathFinderPro-ClearPathUtah-${lastName}-${firstName}.pdf`
       : `PathFinderPro-ClearPathUtah-${lastName}.pdf`;
 
+    const pageWidth = 612;
+    const pageHeight = 792;
+
     const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
+
+    // Add background color to every page
+    const addBackground = () => {
+      doc.save();
+      doc.rect(0, 0, pageWidth, pageHeight).fill('#F5F0E8');
+      doc.restore();
+    };
+
+    // Add background to first page
+    addBackground();
+
+    // Add background to subsequent pages
+    doc.on('pageAdded', addBackground);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     doc.pipe(res);
-
-    const pageWidth = 612;
-    const pageHeight = 792;
-
-    // Background color (sand)
-    doc.rect(0, 0, pageWidth, pageHeight).fill('#F5F0E8');
 
     // Image paths
     const imagesPath = path.join(__dirname, '..', 'public', 'images');
@@ -644,42 +654,45 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== HEADER =====
-    // Logo (centered)
+    // Logo (centered) - debug path
+    console.log('Looking for logo at:', logoPath);
+    console.log('Logo exists:', fs.existsSync(logoPath));
+
+    let currentY = 40;
     if (fs.existsSync(logoPath)) {
       try {
-        doc.image(logoPath, (pageWidth - 60) / 2, 35, { width: 60 });
+        doc.image(logoPath, (pageWidth - 50) / 2, currentY, { width: 50 });
+        currentY = 95;
       } catch (e) {
-        console.log('Logo error:', e.message);
+        console.log('Logo load error:', e.message);
       }
     }
 
-    // PATHFINDER PRO title with colored FINDER
+    // PATHFINDER PRO title - centered manually
     doc.fontSize(24).font('Helvetica-Bold');
-    const titleY = 100;
-    const pathWidth = doc.widthOfString('PATH');
-    const finderWidth = doc.widthOfString('FINDER');
-    const proWidth = doc.widthOfString(' PRO');
-    const totalWidth = pathWidth + finderWidth + proWidth;
-    const titleStartX = (pageWidth - totalWidth) / 2;
+    doc.fillColor('#000000').text('PATH', 0, currentY, { continued: true, width: pageWidth, align: 'center' });
+    doc.fillColor('#f90000').text('FINDER', { continued: true });
+    doc.fillColor('#000000').text(' PRO');
 
-    doc.fillColor('#000000').text('PATH', titleStartX, titleY, { continued: true, lineBreak: false });
-    doc.fillColor('#f90000').text('FINDER', { continued: true, lineBreak: false });
-    doc.fillColor('#000000').text(' PRO', { lineBreak: true });
+    currentY = doc.y + 5;
 
-    doc.moveDown(0.2);
+    // Subtitle centered
     doc.fontSize(11).fillColor('#666666').font('Helvetica');
-    doc.text('by ClearPath Utah Mortgage', { align: 'center' });
+    doc.text('by ClearPath Utah Mortgage', 0, currentY, { width: pageWidth, align: 'center' });
 
-    doc.moveDown(0.4);
+    currentY = doc.y + 5;
+
+    // Agent info centered
     doc.fontSize(9).fillColor('#444444');
-    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', { align: 'center' });
+    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', 0, currentY, { width: pageWidth, align: 'center' });
     doc.fontSize(9).fillColor('#666666');
-    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', { align: 'center' });
+    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', 0, doc.y + 2, { width: pageWidth, align: 'center' });
 
     // Divider
-    doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(pageWidth - 50, doc.y).strokeColor('#8FA38F').lineWidth(1).stroke();
-    doc.moveDown(1);
+    currentY = doc.y + 8;
+    doc.strokeColor('#8FA38F').lineWidth(1);
+    doc.moveTo(50, currentY).lineTo(pageWidth - 50, currentY).stroke();
+    doc.y = currentY + 15;
 
     // ===== CONTENT =====
     const margin = 60;
@@ -724,14 +737,16 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
         doc.moveTo(margin, doc.y + 2).lineTo(margin + titleWidth, doc.y + 2).stroke();
         doc.moveDown(0.5);
 
-        // Items
+        // Items - strip any existing bullets/numbers from the text
         doc.fontSize(11).fillColor('#333333').font('Helvetica');
         items.forEach((item, i) => {
+          // Remove leading bullets, dashes, or numbers like "1.", "1)", "•", "-"
+          const cleanItem = item.replace(/^[\s]*[-•*]\s*/, '').replace(/^[\s]*\d+[.)]\s*/, '').trim();
           const prefix = numbered ? `${i+1}. ` : '• ';
-          doc.text(prefix + item, margin, doc.y, { width: contentWidth, lineGap: 2 });
+          doc.text(prefix + cleanItem, margin, doc.y, { width: contentWidth, lineGap: 2 });
           doc.moveDown(0.3);
         });
-        doc.moveDown(1);
+        doc.moveDown(0.8);
       };
 
       renderSection('YOUR HIGHLIGHTS', letter.highlights, false);
@@ -785,30 +800,42 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== FOOTER =====
-    const footerY = Math.max(doc.y + 30, pageHeight - 130);
-    doc.moveTo(50, footerY).lineTo(pageWidth - 50, footerY).strokeColor('#e0e0e0').lineWidth(0.5).stroke();
+    // Add some space after content
+    doc.moveDown(2);
+
+    // Check if we need to add a new page for footer or if there's enough space
+    const footerHeight = 100;
+    if (doc.y > pageHeight - footerHeight - 50) {
+      doc.addPage();
+    }
+
+    // Position footer at bottom of current page
+    const footerY = pageHeight - 120;
+
+    doc.strokeColor('#e0e0e0').lineWidth(0.5);
+    doc.moveTo(50, footerY).lineTo(pageWidth - 50, footerY).stroke();
 
     // Left logo
     if (fs.existsSync(clearpathLogoPath)) {
-      try { doc.image(clearpathLogoPath, 70, footerY + 15, { width: 55 }); } catch(e) {}
+      try { doc.image(clearpathLogoPath, 60, footerY + 12, { width: 50 }); } catch(e) {}
     }
 
     // Center text
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#8f8c83');
-    doc.text('CLEARPATH UTAH MORTGAGE', 200, footerY + 15, { width: 212, align: 'center' });
+    doc.text('CLEARPATH UTAH MORTGAGE', 180, footerY + 12, { width: 250, align: 'center' });
     doc.fontSize(8).fillColor('#666666').font('Helvetica');
-    doc.text('(801) 891-1846 | hello@clearpathutah.com', 200, footerY + 28, { width: 212, align: 'center' });
-    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 200, footerY + 40, { width: 212, align: 'center' });
+    doc.text('(801) 891-1846 | hello@clearpathutah.com', 180, footerY + 26, { width: 250, align: 'center' });
+    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 180, footerY + 38, { width: 250, align: 'center' });
 
     // Right logo
     if (fs.existsSync(reviewsPath)) {
-      try { doc.image(reviewsPath, pageWidth - 130, footerY + 15, { width: 60 }); } catch(e) {}
+      try { doc.image(reviewsPath, pageWidth - 120, footerY + 12, { width: 55 }); } catch(e) {}
     }
 
-    // Disclaimer
+    // Disclaimer at very bottom
     doc.fontSize(7).fillColor('#999999');
     doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.',
-      50, pageHeight - 30, { width: pageWidth - 100, align: 'center' });
+      50, pageHeight - 35, { width: pageWidth - 100, align: 'center' });
 
     doc.end();
   } catch (error) {
