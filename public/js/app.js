@@ -1312,40 +1312,9 @@ function renderClientLetter(letter) {
 }
 
 // Download analysis as PDF
-async function downloadAnalysisPDF() {
-  const btn = document.getElementById('downloadPdfBtn');
-  btn.disabled = true;
-  btn.textContent = 'Generating PDF...';
-
-  try {
-    const response = await fetch(`/api/analysis/${BORROWER_ID}/pdf`);
-    if (response.ok) {
-      // Get filename from Content-Disposition header
-      const disposition = response.headers.get('Content-Disposition');
-      let filename = 'PathFinderPro-Analysis.pdf';
-      if (disposition) {
-        const match = disposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } else {
-      alert('Failed to generate PDF. Please try again.');
-    }
-  } catch (error) {
-    alert('Failed to generate PDF. Please try again.');
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Download PDF';
+function downloadAnalysisPDF() {
+  // Use direct navigation to let browser handle Content-Disposition
+  window.location.href = `/api/analysis/${BORROWER_ID}/pdf`;
 }
 
 // Email analysis to client (and copy to Kelly)
