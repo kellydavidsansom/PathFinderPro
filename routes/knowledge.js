@@ -33,7 +33,7 @@ const upload = multer({
       cb(new Error('Only PDF files are allowed'));
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
 });
 
 // Get all knowledge sources
@@ -92,7 +92,7 @@ router.post('/url/:id/scrape', async (req, res) => {
     const content = $('main, article, .content, body').first().text()
       .replace(/\s+/g, ' ')
       .trim()
-      .substring(0, 50000); // Limit content size
+      .substring(0, 500000); // Limit content size
 
     database.prepare(`
       UPDATE knowledge_sources
@@ -129,7 +129,7 @@ router.post('/pdf', upload.single('pdf'), async (req, res) => {
       const pdfParse = require('pdf-parse');
       const dataBuffer = fs.readFileSync(req.file.path);
       const pdfData = await pdfParse(dataBuffer);
-      content = pdfData.text.substring(0, 50000); // Limit content size
+      content = pdfData.text.substring(0, 500000); // Limit content size
     } catch (pdfError) {
       console.error('PDF parse error:', pdfError);
       content = '[PDF content could not be extracted]';
