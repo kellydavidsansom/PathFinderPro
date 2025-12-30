@@ -4,6 +4,7 @@ const db = require('../database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { fetchWithBrowser, closeBrowser, isAvailable: isHeadlessAvailable } = require('../services/headlessBrowser');
 
 // Configure multer for PDF uploads
 const storage = multer.diskStorage({
@@ -58,12 +59,12 @@ router.get('/', (req, res) => {
 // Add URL source
 router.post('/url', (req, res) => {
   const database = db.getDb();
-  const { name, url, auto_scrape, scrape_frequency } = req.body;
+  const { name, url, auto_scrape, scrape_frequency, requires_js, wait_selector } = req.body;
 
   const result = database.prepare(`
-    INSERT INTO knowledge_sources (type, name, url, auto_scrape, scrape_frequency)
-    VALUES ('url', ?, ?, ?, ?)
-  `).run(name, url, auto_scrape ? 1 : 0, scrape_frequency || 'weekly');
+    INSERT INTO knowledge_sources (type, name, url, auto_scrape, scrape_frequency, requires_js, wait_selector)
+    VALUES ('url', ?, ?, ?, ?, ?, ?)
+  `).run(name, url, auto_scrape ? 1 : 0, scrape_frequency || 'weekly', requires_js ? 1 : 0, wait_selector || null);
 
   res.json({ success: true, id: result.lastInsertRowid });
 });
@@ -78,11 +79,42 @@ router.post('/url/:id/scrape', async (req, res) => {
   }
 
   try {
-    const fetch = (await import('node-fetch')).default;
     const cheerio = await import('cheerio');
+    let html;
 
-    const response = await fetch(source.url);
-    const html = await response.text();
+    // Use headless browser for JS-required sites
+    if (source.requires_js) {
+      const headlessAvailable = await isHeadlessAvailable();
+      if (!headlessAvailable) {
+        return res.status(500).json({ error: 'Headless browser not available but site requires JavaScript. Check PUPPETEER_EXECUTABLE_PATH.' });
+      }
+
+      console.log(`[Knowledge] Using headless browser for: ${source.url}`);
+      html = await fetchWithBrowser(source.url, {
+        timeout: 45000,
+        waitTime: 3000,
+        waitForSelector: source.wait_selector || null
+      });
+
+      // Close browser after scraping
+      await closeBrowser();
+    } else {
+      // Standard fetch for static pages
+      const fetch = (await import('node-fetch')).default;
+      const response = await fetch(source.url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; PathFinderPro/1.0)'
+        },
+        timeout: 30000
+      });
+
+      if (!response.ok) {
+        return res.status(500).json({ error: `Failed to fetch: ${response.status}` });
+      }
+
+      html = await response.text();
+    }
+
     const $ = cheerio.load(html);
 
     // Remove scripts and styles
@@ -100,10 +132,10 @@ router.post('/url/:id/scrape', async (req, res) => {
       WHERE id = ?
     `).run(content, req.params.id);
 
-    res.json({ success: true, content_length: content.length });
+    res.json({ success: true, content_length: content.length, used_headless: !!source.requires_js });
   } catch (error) {
     console.error('Scrape error:', error);
-    res.status(500).json({ error: 'Failed to scrape URL' });
+    res.status(500).json({ error: 'Failed to scrape URL: ' + error.message });
   }
 });
 

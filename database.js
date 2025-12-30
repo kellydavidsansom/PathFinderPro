@@ -212,6 +212,10 @@ function initialize() {
   addColumnIfNotExists('borrowers', 'cash_out_amount', 'REAL');
   addColumnIfNotExists('borrowers', 'cash_out_purpose', 'TEXT');
 
+  // Knowledge source fields for JS-required sites
+  addColumnIfNotExists('knowledge_sources', 'requires_js', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('knowledge_sources', 'wait_selector', 'TEXT');
+
   console.log('Database initialized successfully');
   return database;
 }
