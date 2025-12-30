@@ -907,62 +907,81 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
     return res.status(400).json({ error: 'Client email is required' });
   }
 
-  try {
-    const nodemailer = require('nodemailer');
-
-    // Create transporter - using environment variables for SMTP config
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-
-    // Format analysis for email
-    const analysisHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="text-align: center; padding: 20px; border-bottom: 1px solid #e0e0e0;">
-          <h1 style="margin: 0;">
-            <span style="color: #000;">PATH</span><span style="color: #f90000;">FINDER</span> <span style="color: #000;">PRO</span>
-          </h1>
-          <p style="color: #666; margin: 5px 0;">Loan Qualification Analysis</p>
-        </div>
-        <div style="padding: 20px;">
-          <p>Dear ${borrower.first_name || 'Valued Client'},</p>
-          <p>Please find below your personalized loan qualification analysis from ClearPath Utah Mortgage.</p>
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-          <div style="line-height: 1.6;">
-            ${borrower.ai_analysis.replace(/\n/g, '<br>')}
-          </div>
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-          <p>If you have any questions, please don't hesitate to reach out.</p>
-          <p>Best regards,<br>Kelly<br>ClearPath Utah Mortgage<br>(801) 891-1846<br>hello@clearpathutah.com</p>
-        </div>
+  // Format analysis for email
+  const analysisHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="text-align: center; padding: 20px; border-bottom: 1px solid #e0e0e0;">
+        <h1 style="margin: 0;">
+          <span style="color: #000;">PATH</span><span style="color: #f90000;">FINDER</span> <span style="color: #000;">PRO</span>
+        </h1>
+        <p style="color: #666; margin: 5px 0;">Loan Qualification Analysis</p>
       </div>
-    `;
+      <div style="padding: 20px;">
+        <p>Dear ${borrower.first_name || 'Valued Client'},</p>
+        <p>Please find below your personalized loan qualification analysis from ClearPath Utah Mortgage.</p>
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+        <div style="line-height: 1.6;">
+          ${borrower.ai_analysis.replace(/\n/g, '<br>')}
+        </div>
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+        <p>If you have any questions, please don't hesitate to reach out.</p>
+        <p>Best regards,<br>Kelly<br>ClearPath Utah Mortgage<br>(801) 891-1846<br>hello@clearpathutah.com</p>
+      </div>
+    </div>
+  `;
 
-    // Build recipient list
-    const recipients = [clientEmail];
-    if (coBorrowerEmail && coBorrowerEmail.trim()) {
-      recipients.push(coBorrowerEmail.trim());
+  // Build recipient list
+  const recipients = [clientEmail];
+  if (coBorrowerEmail && coBorrowerEmail.trim()) {
+    recipients.push(coBorrowerEmail.trim());
+  }
+
+  try {
+    // Check if Mailgun is configured
+    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+      const formData = require('form-data');
+      const Mailgun = require('mailgun.js');
+      const mailgun = new Mailgun(formData);
+      const mg = mailgun.client({
+        username: 'api',
+        key: process.env.MAILGUN_API_KEY
+      });
+
+      await mg.messages.create(process.env.MAILGUN_DOMAIN, {
+        from: process.env.MAILGUN_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
+        to: recipients,
+        cc: 'hello@clearpathutah.com',
+        subject: 'Your Loan Qualification Analysis - PathFinder Pro',
+        html: analysisHtml
+      });
+
+      res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
+    } else {
+      // Fallback to nodemailer/SMTP
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: process.env.SMTP_PORT || 587,
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
+        to: recipients.join(', '),
+        cc: 'hello@clearpathutah.com',
+        subject: 'Your Loan Qualification Analysis - PathFinder Pro',
+        html: analysisHtml
+      });
+
+      res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
     }
-
-    // Send to client (and co-borrower if included)
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'PathFinder Pro <noreply@clearpathutah.com>',
-      to: recipients.join(', '),
-      cc: 'hello@clearpathutah.com', // Always CC Kelly
-      subject: `Your Loan Qualification Analysis - PathFinder Pro`,
-      html: analysisHtml
-    });
-
-    res.json({ success: true, message: `Email sent to ${recipients.join(' and ')}` });
   } catch (error) {
     console.error('Email error:', error);
-    res.status(500).json({ error: 'Failed to send email. Please check SMTP configuration.' });
+    res.status(500).json({ error: 'Failed to send email: ' + error.message });
   }
 });
 

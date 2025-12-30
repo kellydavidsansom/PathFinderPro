@@ -1185,7 +1185,8 @@ async function generateAnalysis() {
       // Show co-borrower checkbox if there's a co-borrower with email
       const coBorrowerOption = document.getElementById('coBorrowerEmailOption');
       const coEmailInput = document.querySelector('[name="co_email"]');
-      const hasCoBorrower = document.querySelector('[name="has_coborrower"]')?.checked;
+      // Check if co-borrower toggle is set to Yes (button has 'active' class)
+      const hasCoBorrower = document.getElementById('coBorrowerYes')?.classList.contains('active');
       if (coBorrowerOption && hasCoBorrower && coEmailInput && coEmailInput.value.trim()) {
         coBorrowerOption.style.display = 'inline-flex';
       } else if (coBorrowerOption) {
