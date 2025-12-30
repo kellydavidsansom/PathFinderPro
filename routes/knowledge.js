@@ -248,8 +248,10 @@ router.get('/context', (req, res) => {
   res.json({ context, source_count: sources.length });
 });
 
-// Mailgun webhook handler
-router.post('/webhook', express.urlencoded({ extended: false }), (req, res) => {
+// Mailgun webhook handler - uses multer for multipart/form-data
+const webhookUpload = multer().none(); // Parse multipart but no files
+
+router.post('/webhook', webhookUpload, (req, res) => {
   console.log('[Webhook] Received email webhook');
   console.log('[Webhook] Body keys:', Object.keys(req.body));
   console.log('[Webhook] Full body:', JSON.stringify(req.body, null, 2));
