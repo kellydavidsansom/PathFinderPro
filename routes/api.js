@@ -603,15 +603,15 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     return res.status(404).json({ error: 'Analysis not found' });
   }
 
+  let doc;
   try {
     const PDFDocument = require('pdfkit');
     const path = require('path');
     const fs = require('fs');
 
-    const doc = new PDFDocument({
+    doc = new PDFDocument({
       margin: 50,
-      size: 'LETTER',
-      bufferPages: true
+      size: 'LETTER'
     });
 
     // Build filename: PathFinderPro-ClearPathUtah-Lastname-Firstname.pdf
@@ -629,11 +629,15 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     const pageHeight = 792;
     doc.rect(0, 0, pageWidth, pageHeight).fill('#F5F0E8');
 
-    // Image paths
-    const imagesPath = path.join(__dirname, '..', 'public', 'images');
-    const logoPath = path.join(imagesPath, 'logo.png');
-    const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
-    const reviewsPath = path.join(imagesPath, 'reviews.png');
+    // Image paths - use path.resolve for reliability across environments
+    const imagesPath = path.resolve(__dirname, '..', 'public', 'images');
+    const logoPath = path.resolve(imagesPath, 'logo.png');
+    const clearpathLogoPath = path.resolve(imagesPath, 'clearpath-logo.png');
+    const reviewsPath = path.resolve(imagesPath, 'reviews.png');
+
+    // Log paths for debugging
+    console.log('PDF Generation - Images path:', imagesPath);
+    console.log('Logo exists:', fs.existsSync(logoPath));
 
     // Try to parse as JSON (new format)
     let parsed = null;
@@ -807,54 +811,58 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== FOOTER =====
-    doc.moveDown(1.5);
+    // Position footer near bottom of page
+    const footerStartY = Math.max(doc.y + 30, pageHeight - 150);
 
     // Thin divider
     doc.strokeColor('#e0e0e0').lineWidth(0.5);
-    doc.moveTo(50, doc.y).lineTo(pageWidth - 50, doc.y).stroke();
-    doc.moveDown(0.8);
+    doc.moveTo(50, footerStartY).lineTo(pageWidth - 50, footerStartY).stroke();
 
-    const footerY = doc.y;
-
-    // Three-column footer layout
-    const colWidth = (pageWidth - 100) / 3;
-    const leftColX = 50;
-    const centerColX = 50 + colWidth;
-    const rightColX = 50 + colWidth * 2;
+    const footerY = footerStartY + 15;
 
     // Left: ClearPath logo
-    if (fs.existsSync(clearpathLogoPath)) {
-      doc.image(clearpathLogoPath, leftColX + 20, footerY, { width: 60 });
+    try {
+      if (fs.existsSync(clearpathLogoPath)) {
+        doc.image(clearpathLogoPath, 70, footerY, { width: 60 });
+      }
+    } catch (imgErr) {
+      console.log('Could not load clearpath logo:', imgErr.message);
     }
 
-    // Center: Company info
-    doc.fontSize(10).font('Helvetica-Bold');
-    const centerTextX = centerColX;
-    const centerTextWidth = colWidth;
+    // Center: Company info (positioned absolutely)
+    const centerX = pageWidth / 2;
 
-    // CLEARPATH UTAH MORTGAGE with colors (centered in middle column)
-    doc.fillColor('#8f8c83').text('CLEAR', centerTextX, footerY, { continued: true, width: centerTextWidth, align: 'center' });
-    doc.fillColor('#b9b399').text('PATH', { continued: true });
-    doc.fillColor('#8f8c83').text(' UTAH MORTGAGE', { continued: false });
+    // CLEARPATH UTAH MORTGAGE - render as single colored text
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#8f8c83');
+    doc.text('CLEARPATH UTAH MORTGAGE', 200, footerY, { width: 212, align: 'center' });
 
     doc.fontSize(8).fillColor('#666666').font('Helvetica');
-    doc.text('(801) 891-1846 | hello@clearpathutah.com', centerTextX, doc.y + 2, { width: centerTextWidth, align: 'center' });
-    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', centerTextX, doc.y + 2, { width: centerTextWidth, align: 'center' });
+    doc.text('(801) 891-1846 | hello@clearpathutah.com', 200, footerY + 14, { width: 212, align: 'center' });
+    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 200, footerY + 26, { width: 212, align: 'center' });
 
     // Right: Reviews image
-    if (fs.existsSync(reviewsPath)) {
-      doc.image(reviewsPath, rightColX + 20, footerY, { width: 70 });
+    try {
+      if (fs.existsSync(reviewsPath)) {
+        doc.image(reviewsPath, pageWidth - 140, footerY, { width: 70 });
+      }
+    } catch (imgErr) {
+      console.log('Could not load reviews image:', imgErr.message);
     }
 
     // Disclaimer at very bottom
     doc.fontSize(7).fillColor('#999999');
     doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.',
-      50, pageHeight - 40, { width: pageWidth - 100, align: 'center' });
+      50, pageHeight - 35, { width: pageWidth - 100, align: 'center' });
 
     doc.end();
   } catch (error) {
-    console.error('PDF generation error:', error);
-    res.status(500).json({ error: 'Failed to generate PDF' });
+    console.error('PDF generation error:', error.message);
+    console.error('PDF generation stack:', error.stack);
+    // Make sure to end the document if it was created
+    if (doc) {
+      try { doc.end(); } catch (e) { /* ignore */ }
+    }
+    res.status(500).json({ error: 'Failed to generate PDF: ' + error.message });
   }
 });
 
