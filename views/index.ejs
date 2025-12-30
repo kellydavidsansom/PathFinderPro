@@ -288,7 +288,7 @@
           <td>${p.name}</td>
           <td>${new Date(p.last_updated).toLocaleDateString()}</td>
           <td>
-            <button class="btn btn-sm btn-danger" onclick="deletePdf(${p.id})">Delete</button>
+            <button class="btn btn-sm btn-danger" onclick="deletePdf(${p.id}, '${p.name.replace(/'/g, "\\'")}')">Delete</button>
           </td>
         </tr>
       `).join('');
@@ -336,8 +336,8 @@
       }
     }
 
-    async function deletePdf(id) {
-      if (confirm('Delete this PDF?')) {
+    async function deletePdf(id, name) {
+      if (confirm(`⚠️ DELETE "${name}"?\n\nThis will permanently remove this PDF from your knowledge repository. This cannot be undone.`)) {
         await fetch(`/knowledge/pdf/${id}`, { method: 'DELETE' });
         loadKnowledgeSources();
       }
