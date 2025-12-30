@@ -1320,11 +1320,19 @@ async function downloadAnalysisPDF() {
   try {
     const response = await fetch(`/api/analysis/${BORROWER_ID}/pdf`);
     if (response.ok) {
+      // Get filename from Content-Disposition header
+      const disposition = response.headers.get('Content-Disposition');
+      let filename = 'PathFinderPro-Analysis.pdf';
+      if (disposition) {
+        const match = disposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `PathFinder_Analysis_${BORROWER_ID}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

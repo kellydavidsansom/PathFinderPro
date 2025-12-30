@@ -609,9 +609,12 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     const fs = require('fs');
 
     // Build filename: PathFinderPro-ClearPathUtah-Lastname-Firstname.pdf
-    const lastName = (borrower.last_name || 'Client').replace(/[^a-zA-Z]/g, '');
-    const firstName = (borrower.first_name || '').replace(/[^a-zA-Z]/g, '');
-    const filename = `PathFinderPro-ClearPathUtah-${lastName}-${firstName}.pdf`;
+    const cleanName = (name) => (name || '').replace(/[^a-zA-Z\s-]/g, '').replace(/\s+/g, '').trim();
+    const lastName = cleanName(borrower.last_name) || 'Client';
+    const firstName = cleanName(borrower.first_name) || '';
+    const filename = firstName
+      ? `PathFinderPro-ClearPathUtah-${lastName}-${firstName}.pdf`
+      : `PathFinderPro-ClearPathUtah-${lastName}.pdf`;
 
     const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
 
@@ -644,65 +647,91 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     // Logo (centered)
     if (fs.existsSync(logoPath)) {
       try {
-        doc.image(logoPath, (pageWidth - 50) / 2, 40, { width: 50 });
+        doc.image(logoPath, (pageWidth - 60) / 2, 35, { width: 60 });
       } catch (e) {
         console.log('Logo error:', e.message);
       }
     }
 
-    // PATHFINDER PRO title
-    doc.fontSize(22).font('Helvetica-Bold').fillColor('#000000');
-    doc.text('PATHFINDER PRO', 0, 100, { align: 'center' });
+    // PATHFINDER PRO title with colored FINDER
+    doc.fontSize(24).font('Helvetica-Bold');
+    const titleY = 100;
+    const pathWidth = doc.widthOfString('PATH');
+    const finderWidth = doc.widthOfString('FINDER');
+    const proWidth = doc.widthOfString(' PRO');
+    const totalWidth = pathWidth + finderWidth + proWidth;
+    const titleStartX = (pageWidth - totalWidth) / 2;
 
-    doc.fontSize(10).fillColor('#666666').font('Helvetica');
+    doc.fillColor('#000000').text('PATH', titleStartX, titleY, { continued: true, lineBreak: false });
+    doc.fillColor('#f90000').text('FINDER', { continued: true, lineBreak: false });
+    doc.fillColor('#000000').text(' PRO', { lineBreak: true });
+
+    doc.moveDown(0.2);
+    doc.fontSize(11).fillColor('#666666').font('Helvetica');
     doc.text('by ClearPath Utah Mortgage', { align: 'center' });
 
-    doc.fontSize(9).fillColor('#333333');
-    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508 | (801) 891-1846 | hello@clearpathutah.com', { align: 'center' });
+    doc.moveDown(0.4);
+    doc.fontSize(9).fillColor('#444444');
+    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', { align: 'center' });
+    doc.fontSize(9).fillColor('#666666');
+    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', { align: 'center' });
 
     // Divider
-    doc.moveTo(50, doc.y + 10).lineTo(pageWidth - 50, doc.y + 10).strokeColor('#8FA38F').lineWidth(0.5).stroke();
-    doc.y += 25;
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(pageWidth - 50, doc.y).strokeColor('#8FA38F').lineWidth(1).stroke();
+    doc.moveDown(1);
 
     // ===== CONTENT =====
+    const margin = 60;
+    const contentWidth = pageWidth - (margin * 2);
+
     if (parsed && parsed.clientLetter) {
       const letter = parsed.clientLetter;
 
       // Greeting
       if (letter.greeting) {
         const parts = letter.greeting.split('\n');
-        doc.fontSize(13).fillColor('#333333').font('Helvetica-Bold');
-        doc.text(parts[0] || '', 50);
+        doc.fontSize(14).fillColor('#333333').font('Helvetica-Bold');
+        doc.text(parts[0] || '', margin);
         if (parts[1]) {
           const digits = parts[1].replace(/\D/g, '');
           let phone = parts[1];
           if (digits.length === 10) {
             phone = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
           }
-          doc.fontSize(10).fillColor('#666666').font('Helvetica');
-          doc.text(phone, 50);
+          doc.fontSize(11).fillColor('#666666').font('Helvetica');
+          doc.text(phone, margin);
         }
-        doc.moveDown(0.8);
+        doc.moveDown(1);
       }
 
       // Introduction
       if (letter.introduction) {
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        doc.text(letter.introduction, 50, doc.y, { width: pageWidth - 100 });
-        doc.moveDown(1);
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        doc.text(letter.introduction, margin, doc.y, { width: contentWidth, lineGap: 3 });
+        doc.moveDown(1.2);
       }
 
       // Helper for sections
       const renderSection = (title, items, numbered) => {
         if (!items || !items.length) return;
-        doc.fontSize(10).fillColor('#1a1a1a').font('Helvetica-Bold').text(title, 50);
-        doc.moveTo(50, doc.y + 2).lineTo(50 + doc.widthOfString(title), doc.y + 2).strokeColor('#8FA38F').stroke();
-        doc.moveDown(0.3);
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
+
+        // Section title with underline
+        doc.fontSize(11).fillColor('#2a2a2a').font('Helvetica-Bold');
+        doc.text(title, margin);
+        const titleWidth = doc.widthOfString(title);
+        doc.strokeColor('#8FA38F').lineWidth(1.5);
+        doc.moveTo(margin, doc.y + 2).lineTo(margin + titleWidth, doc.y + 2).stroke();
+        doc.moveDown(0.5);
+
+        // Items
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
         items.forEach((item, i) => {
-          doc.text((numbered ? `${i+1}. ` : '• ') + item, 50, doc.y, { width: pageWidth - 100 });
+          const prefix = numbered ? `${i+1}. ` : '• ';
+          doc.text(prefix + item, margin, doc.y, { width: contentWidth, lineGap: 2 });
+          doc.moveDown(0.3);
         });
-        doc.moveDown(0.8);
+        doc.moveDown(1);
       };
 
       renderSection('YOUR HIGHLIGHTS', letter.highlights, false);
@@ -711,31 +740,48 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
       // ClearPath Forward
       if (letter.clearpath) {
-        doc.fontSize(10).fillColor('#1a1a1a').font('Helvetica-Bold').text('YOUR CLEARPATH FORWARD', 50);
-        doc.moveTo(50, doc.y + 2).lineTo(50 + doc.widthOfString('YOUR CLEARPATH FORWARD'), doc.y + 2).strokeColor('#8FA38F').stroke();
-        doc.moveDown(0.4);
+        doc.fontSize(11).fillColor('#2a2a2a').font('Helvetica-Bold');
+        doc.text('YOUR CLEARPATH FORWARD', margin);
+        const titleWidth = doc.widthOfString('YOUR CLEARPATH FORWARD');
+        doc.strokeColor('#8FA38F').lineWidth(1.5);
+        doc.moveTo(margin, doc.y + 2).lineTo(margin + titleWidth, doc.y + 2).stroke();
+        doc.moveDown(0.6);
 
+        // Calculate box height
+        doc.fontSize(11).font('Helvetica');
+        const textHeight = doc.heightOfString(letter.clearpath, { width: contentWidth - 30 });
+        const boxHeight = textHeight + 24;
         const boxY = doc.y;
-        const textHeight = doc.fontSize(10).font('Helvetica').heightOfString(letter.clearpath, { width: pageWidth - 130 });
-        doc.rect(50, boxY, pageWidth - 100, textHeight + 20).fill('#EDF2ED');
-        doc.rect(50, boxY, 4, textHeight + 20).fill('#8FA38F');
-        doc.fillColor('#333333').text(letter.clearpath, 64, boxY + 10, { width: pageWidth - 130 });
-        doc.y = boxY + textHeight + 30;
+
+        // Draw box with left accent
+        doc.rect(margin, boxY, contentWidth, boxHeight).fill('#EDF2ED');
+        doc.rect(margin, boxY, 5, boxHeight).fill('#8FA38F');
+
+        // Text inside box
+        doc.fillColor('#333333');
+        doc.text(letter.clearpath, margin + 18, boxY + 12, { width: contentWidth - 30, lineGap: 3 });
+        doc.y = boxY + boxHeight + 20;
       }
 
-      // Closing & Signature
+      // Closing
       if (letter.closing) {
-        doc.fontSize(10).fillColor('#333333').font('Helvetica').text(letter.closing, 50, doc.y, { width: pageWidth - 100 });
-        doc.moveDown(0.5);
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        doc.text(letter.closing, margin, doc.y, { width: contentWidth, lineGap: 3 });
+        doc.moveDown(1);
       }
+
+      // Signature
       if (letter.signature) {
-        doc.fontSize(10).fillColor('#333333').font('Helvetica');
-        letter.signature.split('\n').forEach(line => doc.text(line, 50));
+        doc.fontSize(11).fillColor('#333333').font('Helvetica');
+        letter.signature.split('\n').forEach(line => {
+          doc.text(line, margin);
+        });
       }
     } else {
       // Old format
       const clean = borrower.ai_analysis.replace(/[#*]/g, '');
-      doc.fontSize(10).fillColor('#333333').font('Helvetica').text(clean, 50, doc.y, { width: pageWidth - 100 });
+      doc.fontSize(11).fillColor('#333333').font('Helvetica');
+      doc.text(clean, margin, doc.y, { width: contentWidth, lineGap: 4 });
     }
 
     // ===== FOOTER =====
