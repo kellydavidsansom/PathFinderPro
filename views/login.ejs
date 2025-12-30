@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - PathFinder Pro</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-logo {
+      margin-bottom: 30px;
+    }
+    .login-logo img {
+      width: 80px;
+      height: 80px;
+    }
+    .login-logo h1 {
+      margin-top: 10px;
+      font-size: 1.5rem;
+    }
+    .login-logo .path {
+      color: #1a1a2e;
+    }
+    .login-logo .finder {
+      color: #4CAF50;
+    }
+    .login-logo .pro {
+      color: #888;
+      font-weight: 300;
+    }
+    .login-form {
+      margin-top: 20px;
+    }
+    .login-form input[type="password"] {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    .login-form input[type="password"]:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    .login-form button {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .login-form button:hover {
+      background: #45a049;
+    }
+    .login-error {
+      color: #e74c3c;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #ffeaea;
+      border-radius: 6px;
+    }
+    .login-subtitle {
+      color: #666;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">
+        <img src="/images/logo.png" alt="PathFinder Pro">
+        <h1><span class="path">PATH</span><span class="finder">FINDER</span> <span class="pro">PRO</span></h1>
+      </div>
+      <p class="login-subtitle">ClearPath Utah Mortgage</p>
+
+      <% if (error) { %>
+        <div class="login-error"><%= error %></div>
+      <% } %>
+
+      <form class="login-form" method="POST" action="/login">
+        <input type="password" name="password" placeholder="Enter password" autofocus required>
+        <button type="submit">Sign In</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

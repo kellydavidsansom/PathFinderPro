@@ -458,13 +458,17 @@ router.post('/analyze/:borrowerId', async (req, res) => {
 
   const calculations = calculateBorrowerMetrics(borrower);
 
-  // Get knowledge context
-  const knowledgeContext = database.prepare(`
-    SELECT content FROM knowledge_sources
+  // Get knowledge context with source names and dates
+  const knowledgeSources = database.prepare(`
+    SELECT name, content, type, last_updated FROM knowledge_sources
     WHERE content IS NOT NULL AND content != ''
     ORDER BY last_updated DESC
     LIMIT 10
-  `).all().map(k => k.content).join('\n\n');
+  `).all();
+
+  const knowledgeContext = knowledgeSources.map(k =>
+    `[SOURCE: ${k.name} | Type: ${k.type} | Updated: ${k.last_updated}]\n${k.content}`
+  ).join('\n\n---\n\n');
 
   const prompt = buildAnalysisPrompt(borrower, calculations, knowledgeContext);
 
@@ -523,13 +527,17 @@ router.post('/chat/:borrowerId', async (req, res) => {
     LIMIT 20
   `).all(req.params.borrowerId);
 
-  // Get knowledge context
-  const knowledgeContext = database.prepare(`
-    SELECT content FROM knowledge_sources
+  // Get knowledge context with source names and dates
+  const chatKnowledgeSources = database.prepare(`
+    SELECT name, content, type, last_updated FROM knowledge_sources
     WHERE content IS NOT NULL AND content != ''
     ORDER BY last_updated DESC
     LIMIT 5
-  `).all().map(k => k.content).join('\n\n');
+  `).all();
+
+  const knowledgeContext = chatKnowledgeSources.map(k =>
+    `[SOURCE: ${k.name} | Type: ${k.type} | Updated: ${k.last_updated}]\n${k.content}`
+  ).join('\n\n---\n\n');
 
   // Save user message
   database.prepare(`
@@ -1111,7 +1119,15 @@ MAX PURCHASE POWER:
 
 ESTIMATED CASH TO CLOSE: $${calculations.cashToClose.toFixed(2)}
 
-${knowledge ? `RELEVANT PROGRAM KNOWLEDGE:\n${knowledge.substring(0, 3000)}` : ''}
+${knowledge ? `LENDER GUIDELINES & PROGRAM KNOWLEDGE:
+IMPORTANT: When information conflicts, ALWAYS prioritize in this order:
+1. Recent bulletins/announcements (newer dates override older guidance)
+2. Lender emails with special offers (check effective dates - ignore expired offers)
+3. Base program guidelines
+
+Each source shows its name, type, and update date. If a bulletin updates a guideline, use the bulletin's requirements.
+
+${knowledge.substring(0, 8000)}` : ''}
 
 Please respond with a JSON object containing TWO parts:
 
@@ -1180,9 +1196,12 @@ ${borrower.cash_out_amount ? `- Cash Out Amount: $${borrower.cash_out_amount}` :
 - Cash to Close Needed: $${calculations.cashToClose.toFixed(2)}
 - Liquid Assets: $${calculations.liquidAssets.toFixed(2)}
 
-${knowledge ? `PROGRAM KNOWLEDGE:\n${knowledge.substring(0, 2000)}` : ''}
+${knowledge ? `LENDER GUIDELINES & PROGRAM KNOWLEDGE:
+IMPORTANT: When information conflicts, prioritize: (1) Recent bulletins over base guidelines, (2) Check effective/expiration dates on special offers, (3) Newer sources override older ones.
 
-Be helpful, specific, and reference the borrower's actual numbers when answering questions. If asked about programs, rates, or guidelines, provide accurate current information. Keep responses concise but informative.`;
+${knowledge.substring(0, 4000)}` : ''}
+
+Be helpful, specific, and reference the borrower's actual numbers when answering questions. If asked about programs, rates, or guidelines, provide accurate current information based on the knowledge sources above, prioritizing recent bulletins and announcements. Keep responses concise but informative.`;
 }
 
 function generateMISMOXML(borrower, calculations) {
