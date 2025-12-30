@@ -640,8 +640,9 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
     doc.pipe(res);
 
-    // Image paths for footer
+    // Image paths
     const imagesPath = path.join(__dirname, '..', 'public', 'images');
+    const logoPath = path.join(imagesPath, 'logo.png');
     const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
     const reviewsPath = path.join(imagesPath, 'reviews.png');
 
@@ -654,25 +655,92 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== HEADER =====
-    let currentY = 50;
+    let currentY = 40;
 
-    // PATHFINDER PRO title - clean text only (no logo to avoid overlap)
-    doc.fontSize(22).font('Helvetica-Bold').fillColor('#000000');
-    doc.text('PATHFINDER PRO', 50, currentY, { width: pageWidth - 100, align: 'center' });
+    // Logo and PATHFINDER PRO title
+    // Calculate text widths for centering (with letter spacing)
+    const letterSpacing = 3;
+    doc.fontSize(20).font('Helvetica-Bold');
+    const pathWidth = doc.widthOfString('PATH') + (3 * letterSpacing);
+    const finderWidth = doc.widthOfString('FINDER') + (5 * letterSpacing);
+    const proWidth = doc.widthOfString(' PRO') + (3 * letterSpacing);
+    const totalTextWidth = pathWidth + finderWidth + proWidth;
+    const logoWidth = 35;
+    const logoGap = 12;
+    const totalWidth = logoWidth + logoGap + totalTextWidth;
+    const startX = (pageWidth - totalWidth) / 2;
 
-    currentY = doc.y + 6;
+    // Draw logo
+    if (fs.existsSync(logoPath)) {
+      try {
+        doc.image(logoPath, startX, currentY, { width: logoWidth });
+      } catch (e) {}
+    }
+
+    // Draw "PATH" in dark gray with letter spacing
+    let textX = startX + logoWidth + logoGap;
+    const textY = currentY + 8;
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#333333');
+    doc.text('P', textX, textY, { continued: true, characterSpacing: letterSpacing });
+    doc.text('A', { continued: true, characterSpacing: letterSpacing });
+    doc.text('T', { continued: true, characterSpacing: letterSpacing });
+    doc.text('H', { continued: true, characterSpacing: letterSpacing });
+
+    // Draw "FINDER" in red with letter spacing
+    doc.fillColor('#c0392b');
+    doc.text('F', { continued: true, characterSpacing: letterSpacing });
+    doc.text('I', { continued: true, characterSpacing: letterSpacing });
+    doc.text('N', { continued: true, characterSpacing: letterSpacing });
+    doc.text('D', { continued: true, characterSpacing: letterSpacing });
+    doc.text('E', { continued: true, characterSpacing: letterSpacing });
+    doc.text('R', { continued: true, characterSpacing: letterSpacing });
+
+    // Draw " PRO" in dark gray with letter spacing
+    doc.fillColor('#333333');
+    doc.text(' ', { continued: true, characterSpacing: letterSpacing });
+    doc.text('P', { continued: true, characterSpacing: letterSpacing });
+    doc.text('R', { continued: true, characterSpacing: letterSpacing });
+    doc.text('O', { continued: false });
+
+    currentY = currentY + 38;
 
     // Subtitle centered
     doc.fontSize(10).fillColor('#666666').font('Helvetica');
     doc.text('by ClearPath Utah Mortgage', 50, currentY, { width: pageWidth - 100, align: 'center' });
 
-    currentY = doc.y + 6;
+    currentY = doc.y + 10;
 
-    // Agent info centered
-    doc.fontSize(9).fillColor('#444444');
-    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', 50, currentY, { width: pageWidth - 100, align: 'center' });
-    doc.fontSize(9).fillColor('#666666');
-    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', 50, doc.y + 2, { width: pageWidth - 100, align: 'center' });
+    // Agent info - Kelly Sansom bold, rest normal, phone in olive
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#333333');
+    const infoY = currentY;
+    // Build the line with mixed styling
+    const line1 = 'Kelly Sansom';
+    const line1b = ' - Your Mortgage Specialist | NMLS #2510508 | ';
+    const phone = '(801) 891-1846';
+    const line1c = ' | clearpathutah.com |';
+
+    // Calculate total width for centering
+    doc.font('Helvetica-Bold');
+    const w1 = doc.widthOfString(line1);
+    doc.font('Helvetica');
+    const w2 = doc.widthOfString(line1b);
+    const w3 = doc.widthOfString(phone);
+    const w4 = doc.widthOfString(line1c);
+    const totalLineWidth = w1 + w2 + w3 + w4;
+    const lineStartX = (pageWidth - totalLineWidth) / 2;
+
+    doc.font('Helvetica-Bold').fillColor('#333333');
+    doc.text(line1, lineStartX, infoY, { continued: true });
+    doc.font('Helvetica').fillColor('#444444');
+    doc.text(line1b, { continued: true });
+    doc.fillColor('#8f8c83');  // Olive color for phone
+    doc.text(phone, { continued: true });
+    doc.fillColor('#444444');
+    doc.text(line1c, { continued: false });
+
+    // Email on next line centered in olive
+    doc.fillColor('#8f8c83');
+    doc.text('hello@clearpathutah.com', 50, doc.y + 2, { width: pageWidth - 100, align: 'center' });
 
     // Divider
     currentY = doc.y + 8;
