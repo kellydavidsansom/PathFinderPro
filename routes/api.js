@@ -863,9 +863,9 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     doc.moveTo(50, footerY).lineTo(pageWidth - 50, footerY).stroke();
     footerY += 10;
 
-    // Left logo
+    // Left logo (20% larger)
     if (fs.existsSync(clearpathLogoPath)) {
-      try { doc.image(clearpathLogoPath, 60, footerY, { width: 50 }); } catch(e) {}
+      try { doc.image(clearpathLogoPath, 55, footerY, { width: 60 }); } catch(e) {}
     }
 
     // Center text
@@ -875,9 +875,9 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     doc.text('(801) 891-1846 | hello@clearpathutah.com', 180, footerY + 14, { width: 250, align: 'center' });
     doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 180, footerY + 26, { width: 250, align: 'center' });
 
-    // Right logo
+    // Right logo (20% larger)
     if (fs.existsSync(reviewsPath)) {
-      try { doc.image(reviewsPath, pageWidth - 120, footerY, { width: 55 }); } catch(e) {}
+      try { doc.image(reviewsPath, pageWidth - 130, footerY, { width: 66 }); } catch(e) {}
     }
 
     // Disclaimer below footer
