@@ -950,10 +950,17 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
       const formData = require('form-data');
       const Mailgun = require('mailgun.js');
       const mailgun = new Mailgun(formData);
+
+      // Check if EU account (set MAILGUN_EU=true in env if EU)
+      const isEU = process.env.MAILGUN_EU === 'true';
       const mg = mailgun.client({
         username: 'api',
-        key: process.env.MAILGUN_API_KEY
+        key: process.env.MAILGUN_API_KEY,
+        url: isEU ? 'https://api.eu.mailgun.net' : 'https://api.mailgun.net'
       });
+
+      console.log('Mailgun API Key (first 10 chars):', process.env.MAILGUN_API_KEY?.substring(0, 10) + '...');
+      console.log('Using EU endpoint:', isEU);
 
       const fromAddress = process.env.SMTP_FROM || 'PathFinder Pro <pathfinder@mg.clearpathutah.com>';
 
