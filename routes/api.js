@@ -642,7 +642,7 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
     // Image paths
     const imagesPath = path.join(__dirname, '..', 'public', 'images');
-    const logoPath = path.join(imagesPath, 'logo.png');
+    const logoPath = path.join(imagesPath, 'logo-actual.png');  // Real PNG (logo.png was WebP)
     const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
     const reviewsPath = path.join(imagesPath, 'reviews.png');
 
@@ -660,7 +660,7 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     // Logo and PATHFINDER PRO title
     // Calculate text widths for centering (with letter spacing)
     const letterSpacing = 3;
-    doc.fontSize(20).font('Helvetica-Bold');
+    doc.fontSize(20).font('Helvetica');  // Thinner font (not Bold)
     const pathWidth = doc.widthOfString('PATH') + (3 * letterSpacing);
     const finderWidth = doc.widthOfString('FINDER') + (5 * letterSpacing);
     const proWidth = doc.widthOfString(' PRO') + (3 * letterSpacing);
@@ -674,13 +674,15 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     if (fs.existsSync(logoPath)) {
       try {
         doc.image(logoPath, startX, currentY, { width: logoWidth });
-      } catch (e) {}
+      } catch (e) {
+        console.error('Logo image error:', e.message);
+      }
     }
 
-    // Draw "PATH" in dark gray with letter spacing
+    // Draw "PATH" in dark gray with letter spacing (thin font)
     let textX = startX + logoWidth + logoGap;
     const textY = currentY + 8;
-    doc.fontSize(20).font('Helvetica-Bold').fillColor('#333333');
+    doc.fontSize(20).font('Helvetica').fillColor('#333333');
     doc.text('P', textX, textY, { continued: true, characterSpacing: letterSpacing });
     doc.text('A', { continued: true, characterSpacing: letterSpacing });
     doc.text('T', { continued: true, characterSpacing: letterSpacing });
