@@ -975,11 +975,11 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
         body: formBody.toString()
       });
 
-      const result = await response.json();
-      console.log('Mailgun response:', response.status, result);
+      const responseText = await response.text();
+      console.log('Mailgun response:', response.status, responseText);
 
       if (!response.ok) {
-        throw new Error(result.message || `Mailgun error: ${response.status}`);
+        throw new Error(`Mailgun error ${response.status}: ${responseText}`);
       }
 
       console.log('Email sent successfully via Mailgun API');
@@ -1024,13 +1024,17 @@ function buildAnalysisPrompt(borrower, calculations, knowledge) {
 BORROWER DATA:
 Name: ${borrowerName}
 Phone: ${borrowerPhone}
-${borrower.has_coborrower ? `Co-Borrower: ${borrower.co_first_name} ${borrower.co_last_name}` : 'No co-borrower'}
+Military Status: ${borrower.military_status || 'None'}
+${borrower.has_coborrower ? `
+CO-BORROWER:
+- Name: ${borrower.co_first_name} ${borrower.co_last_name}
+- Military Status: ${borrower.co_military_status || 'None'}` : 'No co-borrower'}
 
 INCOME:
 - Total Monthly Gross Income: $${calculations.totalMonthlyIncome.toFixed(2)}
 - Annual Income: $${calculations.annualIncome.toFixed(2)}
 
-EMPLOYMENT:
+BORROWER EMPLOYMENT:
 ${borrower.employers.map(e => {
   const status = e.is_previous ? '(PREVIOUS)' : '(CURRENT)';
   const timeAtJob = (e.years_at_job || e.months_at_job)
@@ -1038,6 +1042,21 @@ ${borrower.employers.map(e => {
     : '';
   return `- ${e.employer_name}: ${e.position}, ${e.employment_type} ${status}${timeAtJob}`;
 }).join('\n') || 'No employment data'}
+${borrower.has_coborrower && borrower.co_employers && borrower.co_employers.length > 0 ? `
+CO-BORROWER EMPLOYMENT:
+${borrower.co_employers.map(e => {
+  const status = e.is_previous ? '(PREVIOUS)' : '(CURRENT)';
+  const timeAtJob = (e.years_at_job || e.months_at_job)
+    ? ` - ${e.years_at_job || 0} years, ${e.months_at_job || 0} months`
+    : '';
+  return `- ${e.employer_name}: ${e.position}, ${e.employment_type} ${status}${timeAtJob}`;
+}).join('\n')}` : ''}
+${borrower.other_income && borrower.other_income.length > 0 ? `
+BORROWER OTHER INCOME:
+${borrower.other_income.map(i => `- ${i.income_type}: $${i.monthly_amount}/month`).join('\n')}` : ''}
+${borrower.has_coborrower && borrower.co_other_income && borrower.co_other_income.length > 0 ? `
+CO-BORROWER OTHER INCOME:
+${borrower.co_other_income.map(i => `- ${i.income_type}: $${i.monthly_amount}/month`).join('\n')}` : ''}
 
 ASSETS:
 - Total Assets: $${calculations.totalAssets.toFixed(2)}
