@@ -249,7 +249,7 @@ router.get('/context', (req, res) => {
 });
 
 // Mailgun webhook handler - uses multer for multipart/form-data
-const webhookUpload = multer().none(); // Parse multipart but no files
+const webhookUpload = multer().any(); // Accept all fields including files
 
 router.post('/webhook', webhookUpload, (req, res) => {
   console.log('[Webhook] Received email webhook');
