@@ -250,15 +250,31 @@ router.get('/context', (req, res) => {
 
 // Mailgun webhook handler
 router.post('/webhook', express.urlencoded({ extended: false }), (req, res) => {
+  console.log('[Webhook] Received email webhook');
+  console.log('[Webhook] Body keys:', Object.keys(req.body));
+  console.log('[Webhook] Full body:', JSON.stringify(req.body, null, 2));
+
   const database = db.getDb();
 
-  const { sender, subject, 'body-plain': body } = req.body;
+  // Mailgun can send different field names depending on route configuration
+  const sender = req.body.sender || req.body.from || req.body.From;
+  const subject = req.body.subject || req.body.Subject;
+  const body = req.body['body-plain'] || req.body['body-text'] || req.body.text || '';
+
+  console.log('[Webhook] Parsed - sender:', sender, 'subject:', subject, 'body length:', body?.length || 0);
 
   if (sender && subject) {
-    database.prepare(`
-      INSERT INTO received_emails (from_address, subject, body)
-      VALUES (?, ?, ?)
-    `).run(sender, subject, body || '');
+    try {
+      database.prepare(`
+        INSERT INTO received_emails (from_address, subject, body)
+        VALUES (?, ?, ?)
+      `).run(sender, subject, body || '');
+      console.log('[Webhook] Email saved successfully');
+    } catch (err) {
+      console.error('[Webhook] Database error:', err);
+    }
+  } else {
+    console.log('[Webhook] Missing sender or subject, email not saved');
   }
 
   res.status(200).send('OK');
