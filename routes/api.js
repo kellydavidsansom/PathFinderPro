@@ -635,13 +635,13 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     doc.on('pageAdded', addBackground);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    // Use both filename and filename* for better browser compatibility
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
 
     doc.pipe(res);
 
-    // Image paths
+    // Image paths for footer
     const imagesPath = path.join(__dirname, '..', 'public', 'images');
-    const logoPath = path.join(imagesPath, 'logo.png');
     const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
     const reviewsPath = path.join(imagesPath, 'reviews.png');
 
@@ -654,45 +654,31 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== HEADER =====
-    // Logo (centered) - debug path
-    console.log('Looking for logo at:', logoPath);
-    console.log('Logo exists:', fs.existsSync(logoPath));
+    let currentY = 50;
 
-    let currentY = 40;
-    if (fs.existsSync(logoPath)) {
-      try {
-        doc.image(logoPath, (pageWidth - 50) / 2, currentY, { width: 50 });
-        currentY = 95;
-      } catch (e) {
-        console.log('Logo load error:', e.message);
-      }
-    }
+    // PATHFINDER PRO title - clean text only (no logo to avoid overlap)
+    doc.fontSize(22).font('Helvetica-Bold').fillColor('#000000');
+    doc.text('PATHFINDER PRO', 50, currentY, { width: pageWidth - 100, align: 'center' });
 
-    // PATHFINDER PRO title - centered manually
-    doc.fontSize(24).font('Helvetica-Bold');
-    doc.fillColor('#000000').text('PATH', 0, currentY, { continued: true, width: pageWidth, align: 'center' });
-    doc.fillColor('#f90000').text('FINDER', { continued: true });
-    doc.fillColor('#000000').text(' PRO');
-
-    currentY = doc.y + 5;
+    currentY = doc.y + 6;
 
     // Subtitle centered
-    doc.fontSize(11).fillColor('#666666').font('Helvetica');
-    doc.text('by ClearPath Utah Mortgage', 0, currentY, { width: pageWidth, align: 'center' });
+    doc.fontSize(10).fillColor('#666666').font('Helvetica');
+    doc.text('by ClearPath Utah Mortgage', 50, currentY, { width: pageWidth - 100, align: 'center' });
 
-    currentY = doc.y + 5;
+    currentY = doc.y + 6;
 
     // Agent info centered
     doc.fontSize(9).fillColor('#444444');
-    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', 0, currentY, { width: pageWidth, align: 'center' });
+    doc.text('Kelly Sansom - Your Mortgage Specialist | NMLS #2510508', 50, currentY, { width: pageWidth - 100, align: 'center' });
     doc.fontSize(9).fillColor('#666666');
-    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', 0, doc.y + 2, { width: pageWidth, align: 'center' });
+    doc.text('(801) 891-1846 | clearpathutah.com | hello@clearpathutah.com', 50, doc.y + 2, { width: pageWidth - 100, align: 'center' });
 
     // Divider
     currentY = doc.y + 8;
-    doc.strokeColor('#8FA38F').lineWidth(1);
+    doc.strokeColor('#8FA38F').lineWidth(0.75);
     doc.moveTo(50, currentY).lineTo(pageWidth - 50, currentY).stroke();
-    doc.y = currentY + 15;
+    doc.y = currentY + 12;
 
     // ===== CONTENT =====
     const margin = 60;
@@ -701,22 +687,11 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     if (parsed && parsed.clientLetter) {
       const letter = parsed.clientLetter;
 
-      // Greeting
-      if (letter.greeting) {
-        const parts = letter.greeting.split('\n');
-        doc.fontSize(14).fillColor('#333333').font('Helvetica-Bold');
-        doc.text(parts[0] || '', margin);
-        if (parts[1]) {
-          const digits = parts[1].replace(/\D/g, '');
-          let phone = parts[1];
-          if (digits.length === 10) {
-            phone = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
-          }
-          doc.fontSize(11).fillColor('#666666').font('Helvetica');
-          doc.text(phone, margin);
-        }
-        doc.moveDown(1);
-      }
+      // Greeting - just "Dear FirstName," with body styling (no last name, no phone)
+      const firstName = borrower.first_name || 'Valued Client';
+      doc.fontSize(11).fillColor('#333333').font('Helvetica');
+      doc.text(`Dear ${firstName},`, margin);
+      doc.moveDown(0.8);
 
       // Introduction
       if (letter.introduction) {
@@ -774,22 +749,24 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
 
         // Text inside box
         doc.fillColor('#333333');
-        doc.text(letter.clearpath, margin + 18, boxY + 12, { width: contentWidth - 30, lineGap: 3 });
-        doc.y = boxY + boxHeight + 20;
+        doc.text(letter.clearpath, margin + 18, boxY + 12, { width: contentWidth - 30, lineGap: 2 });
+        doc.y = boxY + boxHeight + 15;
       }
 
       // Closing
       if (letter.closing) {
         doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        doc.text(letter.closing, margin, doc.y, { width: contentWidth, lineGap: 3 });
-        doc.moveDown(1);
+        doc.text(letter.closing, margin, doc.y, { width: contentWidth, lineGap: 2 });
+        doc.moveDown(0.8);
       }
 
       // Signature
       if (letter.signature) {
         doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        letter.signature.split('\n').forEach(line => {
-          doc.text(line, margin);
+        // Just print signature lines compactly
+        const sigLines = letter.signature.split('\n').filter(l => l.trim());
+        sigLines.forEach(line => {
+          doc.text(line.trim(), margin);
         });
       }
     } else {
@@ -800,42 +777,45 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== FOOTER =====
-    // Add some space after content
-    doc.moveDown(2);
+    // Small space after signature
+    doc.moveDown(1.5);
 
-    // Check if we need to add a new page for footer or if there's enough space
-    const footerHeight = 100;
-    if (doc.y > pageHeight - footerHeight - 50) {
+    // Check if we need a new page for footer (need ~120px for footer content)
+    const footerNeeded = 120;
+    if (doc.y > pageHeight - footerNeeded - 30) {
       doc.addPage();
     }
 
-    // Position footer at bottom of current page
-    const footerY = pageHeight - 120;
+    // Footer flows from current position
+    let footerY = doc.y;
 
+    // Divider line
     doc.strokeColor('#e0e0e0').lineWidth(0.5);
     doc.moveTo(50, footerY).lineTo(pageWidth - 50, footerY).stroke();
+    footerY += 10;
 
     // Left logo
     if (fs.existsSync(clearpathLogoPath)) {
-      try { doc.image(clearpathLogoPath, 60, footerY + 12, { width: 50 }); } catch(e) {}
+      try { doc.image(clearpathLogoPath, 60, footerY, { width: 50 }); } catch(e) {}
     }
 
     // Center text
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#8f8c83');
-    doc.text('CLEARPATH UTAH MORTGAGE', 180, footerY + 12, { width: 250, align: 'center' });
+    doc.text('CLEARPATH UTAH MORTGAGE', 180, footerY, { width: 250, align: 'center' });
     doc.fontSize(8).fillColor('#666666').font('Helvetica');
-    doc.text('(801) 891-1846 | hello@clearpathutah.com', 180, footerY + 26, { width: 250, align: 'center' });
-    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 180, footerY + 38, { width: 250, align: 'center' });
+    doc.text('(801) 891-1846 | hello@clearpathutah.com', 180, footerY + 14, { width: 250, align: 'center' });
+    doc.text('NMLS #2510508 | FAIR LENDER | FAIR HOUSING', 180, footerY + 26, { width: 250, align: 'center' });
 
     // Right logo
     if (fs.existsSync(reviewsPath)) {
-      try { doc.image(reviewsPath, pageWidth - 120, footerY + 12, { width: 55 }); } catch(e) {}
+      try { doc.image(reviewsPath, pageWidth - 120, footerY, { width: 55 }); } catch(e) {}
     }
 
-    // Disclaimer at very bottom
+    // Disclaimer below footer
+    doc.y = footerY + 55;
     doc.fontSize(7).fillColor('#999999');
     doc.text('Powered by Capital Financial Group, Inc. – NMLS #3146. Information subject to change without notice. This is not an offer for extension of credit or a commitment to lend. Equal Housing Lender.',
-      50, pageHeight - 35, { width: pageWidth - 100, align: 'center' });
+      50, doc.y, { width: pageWidth - 100, align: 'center' });
 
     doc.end();
   } catch (error) {
