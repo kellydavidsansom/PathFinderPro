@@ -1106,8 +1106,12 @@
           <div class="add-form">
             <input type="text" id="urlName" placeholder="Name/Label">
             <input type="url" id="urlInput" placeholder="https://...">
+            <label class="checkbox-label" style="display: flex; align-items: center; gap: 5px; margin: 0 10px;">
+              <input type="checkbox" id="urlRequiresJs"> Requires JS
+            </label>
             <button class="btn btn-primary" onclick="addUrl()">Add URL</button>
           </div>
+          <p class="help-text" style="font-size: 0.8em; color: #666; margin-top: 5px;">Enable "Requires JS" for SPAs like Freddie Mac Guide.</p>
           <table class="data-table" id="urlsTable"><thead><tr><th>Name</th><th>URL</th><th>Last Scraped</th><th>Actions</th></tr></thead><tbody></tbody></table>
         </div>
         <div id="emails-content" class="knowledge-content">

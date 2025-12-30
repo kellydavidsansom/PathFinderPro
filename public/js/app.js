@@ -1558,7 +1558,7 @@ async function loadKnowledgeSources() {
     if (urlsBody) {
       urlsBody.innerHTML = data.urls.map(u => `
         <tr>
-          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.name)}${u.requires_js ? ' <span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 3px; font-size: 0.75em;">JS</span>' : ''}</td>
           <td><a href="${u.url}" target="_blank">${u.url.substring(0, 40)}...</a></td>
           <td>${u.last_updated ? new Date(u.last_updated).toLocaleDateString() : 'Never'}</td>
           <td>
@@ -1576,13 +1576,17 @@ async function loadKnowledgeSources() {
 async function addUrl() {
   const name = document.getElementById('urlName').value;
   const url = document.getElementById('urlInput').value;
+  const requiresJs = document.getElementById('urlRequiresJs')?.checked || false;
   await fetch('/knowledge/url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, url })
+    body: JSON.stringify({ name, url, requires_js: requiresJs })
   });
   document.getElementById('urlName').value = '';
   document.getElementById('urlInput').value = '';
+  if (document.getElementById('urlRequiresJs')) {
+    document.getElementById('urlRequiresJs').checked = false;
+  }
   loadKnowledgeSources();
 }
 

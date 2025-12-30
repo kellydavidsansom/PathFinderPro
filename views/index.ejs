@@ -124,8 +124,14 @@
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
             </select>
+            <label class="checkbox-label" style="display: flex; align-items: center; gap: 5px; margin: 0 10px;">
+              <input type="checkbox" id="urlRequiresJs"> Requires JS
+            </label>
             <button class="btn btn-primary" onclick="addUrl()">Add URL</button>
           </div>
+          <p class="help-text" style="font-size: 0.8em; color: #666; margin-top: 5px;">
+            Enable "Requires JS" for single-page apps (SPAs) like Freddie Mac Guide that load content with JavaScript.
+          </p>
           <table class="data-table" id="urlsTable">
             <thead>
               <tr>
@@ -249,7 +255,7 @@
       const urlsBody = document.querySelector('#urlsTable tbody');
       urlsBody.innerHTML = data.urls.map(u => `
         <tr>
-          <td>${u.name}</td>
+          <td>${u.name}${u.requires_js ? ' <span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 3px; font-size: 0.75em;">JS</span>' : ''}</td>
           <td><a href="${u.url}" target="_blank">${u.url.substring(0, 40)}...</a></td>
           <td>${u.last_updated ? new Date(u.last_updated).toLocaleDateString() : 'Never'}</td>
           <td>
@@ -292,15 +298,17 @@
       const name = document.getElementById('urlName').value;
       const url = document.getElementById('urlInput').value;
       const frequency = document.getElementById('urlFrequency').value;
+      const requiresJs = document.getElementById('urlRequiresJs').checked;
 
       await fetch('/knowledge/url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url, auto_scrape: frequency !== 'manual', scrape_frequency: frequency })
+        body: JSON.stringify({ name, url, auto_scrape: frequency !== 'manual', scrape_frequency: frequency, requires_js: requiresJs })
       });
 
       document.getElementById('urlName').value = '';
       document.getElementById('urlInput').value = '';
+      document.getElementById('urlRequiresJs').checked = false;
       loadKnowledgeSources();
     }
 
