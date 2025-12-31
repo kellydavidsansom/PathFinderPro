@@ -212,6 +212,10 @@ function initialize() {
   addColumnIfNotExists('borrowers', 'cash_out_amount', 'REAL');
   addColumnIfNotExists('borrowers', 'cash_out_purpose', 'TEXT');
 
+  // Quick reference and chat-informed analysis
+  addColumnIfNotExists('borrowers', 'quick_reference', 'TEXT');
+  addColumnIfNotExists('borrowers', 'quick_reference_updated', 'DATETIME');
+
   // Knowledge source fields for JS-required sites
   addColumnIfNotExists('knowledge_sources', 'requires_js', 'INTEGER DEFAULT 0');
   addColumnIfNotExists('knowledge_sources', 'wait_selector', 'TEXT');

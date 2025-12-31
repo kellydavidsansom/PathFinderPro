@@ -439,7 +439,7 @@ async function triggerWebhooks(eventType, data) {
 // EXISTING ENDPOINTS
 // ============================================
 
-// Claude AI Analysis
+// Claude AI Analysis (informed by chat history and quick reference)
 router.post('/analyze/:borrowerId', async (req, res) => {
   const database = db.getDb();
   const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
@@ -470,7 +470,18 @@ router.post('/analyze/:borrowerId', async (req, res) => {
     `[SOURCE: ${k.name} | Type: ${k.type} | Updated: ${k.last_updated}]\n${k.content}`
   ).join('\n\n---\n\n');
 
-  const prompt = buildAnalysisPrompt(borrower, calculations, knowledgeContext);
+  // Get chat history to inform the analysis
+  const chatHistory = database.prepare(`
+    SELECT role, content, created_at FROM chat_history
+    WHERE borrower_id = ?
+    ORDER BY created_at ASC
+    LIMIT 20
+  `).all(req.params.borrowerId);
+
+  // Get quick reference if available
+  const quickReference = borrower.quick_reference || null;
+
+  const prompt = buildAnalysisPrompt(borrower, calculations, knowledgeContext, chatHistory, quickReference);
 
   try {
     const Anthropic = require('@anthropic-ai/sdk');
@@ -495,6 +506,65 @@ router.post('/analyze/:borrowerId', async (req, res) => {
   } catch (error) {
     console.error('Claude API error:', error);
     res.status(500).json({ error: 'Failed to generate analysis' });
+  }
+});
+
+// Quick Reference Generation (Loan Officer sidebar only)
+router.post('/quick-reference/:borrowerId', async (req, res) => {
+  const database = db.getDb();
+  const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
+
+  if (!borrower) {
+    return res.status(404).json({ error: 'Borrower not found' });
+  }
+
+  // Parse JSON fields
+  borrower.employers = JSON.parse(borrower.employers || '[]');
+  borrower.other_income = JSON.parse(borrower.other_income || '[]');
+  borrower.co_employers = JSON.parse(borrower.co_employers || '[]');
+  borrower.co_other_income = JSON.parse(borrower.co_other_income || '[]');
+  borrower.assets = JSON.parse(borrower.assets || '[]');
+  borrower.debts = JSON.parse(borrower.debts || '[]');
+
+  const calculations = calculateBorrowerMetrics(borrower);
+
+  // Get knowledge context
+  const knowledgeSources = database.prepare(`
+    SELECT name, content, type, last_updated FROM knowledge_sources
+    WHERE content IS NOT NULL AND content != ''
+    ORDER BY last_updated DESC
+    LIMIT 10
+  `).all();
+
+  const knowledgeContext = knowledgeSources.map(k =>
+    `[SOURCE: ${k.name} | Type: ${k.type} | Updated: ${k.last_updated}]\n${k.content}`
+  ).join('\n\n---\n\n');
+
+  const prompt = buildQuickReferencePrompt(borrower, calculations, knowledgeContext);
+
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic();
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const quickRef = response.content[0].text;
+
+    // Cache the quick reference
+    database.prepare(`
+      UPDATE borrowers
+      SET quick_reference = ?, quick_reference_updated = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(quickRef, req.params.borrowerId);
+
+    res.json({ quickReference: quickRef });
+  } catch (error) {
+    console.error('Claude API error:', error);
+    res.status(500).json({ error: 'Failed to generate quick reference' });
   }
 });
 
@@ -1033,11 +1103,100 @@ router.post('/analysis/:borrowerId/email', async (req, res) => {
 });
 
 // Helper functions
-function buildAnalysisPrompt(borrower, calculations, knowledge) {
+function buildQuickReferencePrompt(borrower, calculations, knowledge) {
+  const isRefinance = borrower.loan_purpose === 'Refinance';
+
+  return `You are helping Kelly Sansom, a mortgage loan officer at ClearPath Utah Mortgage, quickly assess a borrower's qualification profile.
+
+BORROWER INFORMATION:
+- Name: ${borrower.first_name || ''} ${borrower.last_name || ''}
+${borrower.has_coborrower ? `- Co-Borrower: ${borrower.co_first_name || ''} ${borrower.co_last_name || ''}` : ''}
+- Loan Purpose: ${borrower.loan_purpose || 'Purchase'}
+
+INCOME & EMPLOYMENT:
+- Monthly Income: $${calculations.totalMonthlyIncome.toFixed(2)}
+- Monthly Debts: $${calculations.totalMonthlyDebts.toFixed(2)}
+
+LOAN DETAILS:
+${isRefinance ? `- Property Value: $${borrower.property_value || 0}
+- Current Loan Balance: $${borrower.current_loan_balance || 0}
+- Refinance Type: ${borrower.refinance_type || 'Rate/Term'}
+${borrower.cash_out_amount ? `- Cash Out Amount: $${borrower.cash_out_amount}` : ''}` : `- Purchase Price: $${borrower.purchase_price || 0}
+- Down Payment: $${borrower.down_payment_amount || 0}`}
+- Loan Amount: $${calculations.loanAmount.toFixed(2)}
+- LTV: ${calculations.ltv.toFixed(1)}%
+- Property Type: ${borrower.property_type || 'Not specified'}
+- Occupancy: ${borrower.occupancy || 'Not specified'}
+
+RATIOS:
+- Front-End DTI: ${calculations.frontEndDTI.toFixed(1)}%
+- Back-End DTI: ${calculations.backEndDTI.toFixed(1)}%
+
+CREDIT:
+- Credit Score: ${borrower.credit_score || 'Not provided'}
+${borrower.has_coborrower ? `- Co-Borrower Score: ${borrower.co_credit_score || 'Not provided'}` : ''}
+- Late Payments (12 mo): ${borrower.late_payments_12 ? 'Yes' : 'No'}
+- Bankruptcy: ${borrower.bankruptcy || 'Never'}
+- Foreclosure: ${borrower.foreclosure || 'Never'}
+
+ASSETS:
+- Liquid Assets: $${calculations.liquidAssets.toFixed(2)}
+- Cash to Close Needed: $${calculations.cashToClose.toFixed(2)}
+
+${knowledge ? `LENDER GUIDELINES & PROGRAM KNOWLEDGE:
+${knowledge.substring(0, 6000)}` : ''}
+
+Please provide a JSON object with the loan officer quick reference ONLY. This is for Kelly's internal use to quickly assess the borrower.
+
+Return ONLY valid JSON with this structure (each field should have 2-4 concise bullet points):
+{
+  "strengths": ["What makes this borrower strong"],
+  "weaknesses": ["Areas of concern"],
+  "primaryRecommendation": "Best loan program recommendation with brief reason",
+  "secondaryOptions": ["Alternative programs to consider"],
+  "concernsToAddress": ["Issues that need to be resolved before approval"],
+  "borrowerOptions": ["What the borrower could do to improve their position"],
+  "suggestedNextSteps": ["Immediate action items for Kelly"]
+}`;
+}
+
+function buildAnalysisPrompt(borrower, calculations, knowledge, chatHistory = [], quickReference = null) {
   const borrowerName = `${borrower.first_name || ''} ${borrower.last_name || ''}`.trim() || 'Valued Client';
   const borrowerPhone = borrower.phone || '';
 
-  return `You are helping Kelly Sansom, a mortgage loan officer at ClearPath Utah Mortgage, analyze a borrower's qualification profile.
+  // Format chat history for context
+  let chatContext = '';
+  if (chatHistory && chatHistory.length > 0) {
+    chatContext = `\n\nCONVERSATION HISTORY WITH KELLY:
+The following conversation has taken place between Kelly and Claude about this borrower. Use these insights to personalize the client letter:
+
+${chatHistory.map(msg => `${msg.role === 'user' ? 'Kelly' : 'Claude'}: ${msg.content}`).join('\n\n')}
+
+---END CONVERSATION---
+`;
+  }
+
+  // Include quick reference summary if available
+  let quickRefContext = '';
+  if (quickReference) {
+    try {
+      // Strip markdown code blocks if present
+      let jsonStr = quickReference.trim();
+      if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+      }
+      const parsed = JSON.parse(jsonStr);
+      quickRefContext = `\n\nQUICK REFERENCE (Kelly's assessment):
+- Primary Recommendation: ${parsed.primaryRecommendation || 'Not specified'}
+- Strengths: ${(parsed.strengths || []).join(', ')}
+- Concerns: ${(parsed.concernsToAddress || []).join(', ')}
+`;
+    } catch (e) {
+      // If parsing fails, skip the quick reference context
+    }
+  }
+
+  return `You are helping Kelly Sansom, a mortgage loan officer at ClearPath Utah Mortgage, create a personalized client letter based on the analysis and conversation history.
 
 BORROWER DATA:
 Name: ${borrowerName}
@@ -1125,49 +1284,31 @@ IMPORTANT: When information conflicts, ALWAYS prioritize in this order:
 2. Lender emails with special offers (check effective dates - ignore expired offers)
 3. Base program guidelines
 
-Each source shows its name, type, and update date. If a bulletin updates a guideline, use the bulletin's requirements.
+${knowledge.substring(0, 6000)}` : ''}
+${quickRefContext}${chatContext}
+IMPORTANT: If there is conversation history above, use the insights from that discussion to personalize the client letter. Reference specific topics, concerns, or options that were discussed. The letter should feel like a natural follow-up to the conversation Kelly had with the client.
 
-${knowledge.substring(0, 8000)}` : ''}
+Please respond with a JSON object containing the "clientLetter" - a warm, professional letter FROM Kelly TO the client:
 
-Please respond with a JSON object containing TWO parts:
-
-1. "loanOfficerSummary" - A quick reference for the loan officer with these fields (each should be an array of brief bullet points, 2-4 items each):
-   - strengths: What makes this borrower strong
-   - weaknesses: Areas of concern
-   - primaryRecommendation: Best loan program recommendation (1-2 sentences)
-   - secondaryOptions: Alternative programs to consider
-   - concernsToAddress: Issues that need to be resolved
-   - borrowerOptions: What the borrower could do to improve their position
-   - suggestedNextSteps: Immediate action items
-
-2. "clientLetter" - A warm, professional letter FROM Kelly TO the client. Structure it EXACTLY like this:
-   - greeting: "Dear ${borrowerName}," on its own line, then "${borrowerPhone}" on the next line if phone exists
-   - introduction: A thank you for allowing me to run some numbers. Explain this analysis is a starting point to help them understand where they stand in terms of home readiness. Keep it warm and encouraging. (2-3 sentences)
-   - highlights: Section titled "YOUR HIGHLIGHTS" - What's working in their favor (3-5 bullet points, positive and encouraging)
-   - improvements: Section titled "ROOM FOR IMPROVEMENT" - Areas that could be stronger (2-4 bullet points, constructive not negative)
-   - options: Section titled "OPTIONS TO STRENGTHEN YOUR PROFILE" - Specific actionable things they could do (3-5 numbered items with brief explanations)
-   - clearpath: Section titled "YOUR CLEARPATH FORWARD" - A roadmap paragraph giving them clear next steps to be successful in home buying. Be specific and actionable. End on an encouraging note.
-   - closing: "I'm here to help guide you every step of the way. Please don't hesitate to reach out with any questions."
-   - signature: "Warmly," then "Kelly Sansom" then "Your Mortgage Specialist" then "(801) 891-1846" then "hello@clearpathutah.com"
+Structure it EXACTLY like this:
+- greeting: "Dear ${borrowerName}," on its own line, then "${borrowerPhone}" on the next line if phone exists
+- introduction: A thank you for allowing me to run some numbers. If there was a conversation, reference that we discussed their situation. Explain this analysis is a starting point to help them understand where they stand. Keep it warm and encouraging. (2-3 sentences)
+- highlights: Section titled "YOUR HIGHLIGHTS" - What's working in their favor (3-5 bullet points, positive and encouraging)
+- improvements: Section titled "ROOM FOR IMPROVEMENT" - Areas that could be stronger (2-4 bullet points, constructive not negative)
+- options: Section titled "OPTIONS TO STRENGTHEN YOUR PROFILE" - Specific actionable things they could do. If discussed in the conversation, prioritize those options. (3-5 numbered items with brief explanations)
+- clearpath: Section titled "YOUR CLEARPATH FORWARD" - A roadmap paragraph giving them clear next steps. Reference any specific plans or strategies discussed in the conversation. Be specific and actionable. End on an encouraging note.
+- closing: "I'm here to help guide you every step of the way. Please don't hesitate to reach out with any questions."
+- signature: "Warmly," then "Kelly Sansom" then "Your Mortgage Specialist" then "(801) 891-1846" then "hello@clearpathutah.com"
 
 Return ONLY valid JSON, no markdown code blocks. Example structure:
 {
-  "loanOfficerSummary": {
-    "strengths": ["point 1", "point 2"],
-    "weaknesses": ["point 1"],
-    "primaryRecommendation": "FHA loan due to...",
-    "secondaryOptions": ["Conventional with...", "Utah Housing..."],
-    "concernsToAddress": ["DTI is high", "Need reserves"],
-    "borrowerOptions": ["Pay down car loan", "Add co-borrower income"],
-    "suggestedNextSteps": ["Get pre-approval letter", "Connect with realtor"]
-  },
   "clientLetter": {
     "greeting": "Dear John Smith,\\n(801) 555-1234",
-    "introduction": "Thank you for...",
+    "introduction": "Thank you for taking the time to discuss your home buying goals with me...",
     "highlights": ["Strong credit score of 720", "Stable employment history"],
     "improvements": ["DTI is on the higher side", "Limited reserves"],
     "options": ["1. Pay down your car loan...", "2. Consider adding..."],
-    "clearpath": "Based on your profile, here's your path forward...",
+    "clearpath": "Based on our conversation, here's your path forward...",
     "closing": "I'm here to help...",
     "signature": "Warmly,\\nKelly Sansom\\nYour Mortgage Specialist\\n(801) 891-1846\\nhello@clearpathutah.com"
   }

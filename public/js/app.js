@@ -1117,17 +1117,65 @@ function updateCalculationDisplay(calc) {
   updatePropertyCalculations();
 }
 
-// AI Analysis
-async function generateAnalysis() {
-  const btn = document.querySelector('[onclick="generateAnalysis()"]');
-  const analysisDiv = document.getElementById('analysisReport');
-  const downloadBtn = document.getElementById('downloadPdfBtn');
-  const emailBtn = document.getElementById('emailAnalysisBtn');
+// Quick Reference Generation (Loan Officer sidebar only)
+async function generateQuickReference() {
+  const btn = document.getElementById('quickRefBtn');
+  const placeholder = document.getElementById('quickRefPlaceholder');
   const sidebar = document.getElementById('loanOfficerSidebar');
 
   btn.disabled = true;
   btn.textContent = 'Generating...';
-  analysisDiv.innerHTML = '<p>Analyzing borrower profile...</p>';
+  if (placeholder) placeholder.textContent = 'Analyzing borrower profile...';
+
+  try {
+    const response = await fetch(`/api/quick-reference/${BORROWER_ID}`, { method: 'POST' });
+    const { quickReference, error } = await response.json();
+
+    if (error) {
+      if (placeholder) placeholder.textContent = `Error: ${error}`;
+      sidebar.style.display = 'none';
+    } else {
+      // Try to parse as JSON
+      let parsed = null;
+      try {
+        // Strip markdown code blocks if present
+        let jsonStr = quickReference.trim();
+        if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+        }
+        parsed = JSON.parse(jsonStr);
+      } catch (e) {
+        console.log('Quick reference JSON parse failed:', e.message);
+        parsed = null;
+      }
+
+      if (parsed) {
+        populateLoanOfficerSidebar(parsed);
+        sidebar.style.display = 'block';
+        if (placeholder) placeholder.innerHTML = '<span style="color: var(--success);">Quick reference generated. See sidebar for details.</span>';
+      } else {
+        if (placeholder) placeholder.textContent = 'Quick reference generated but could not be parsed.';
+      }
+    }
+  } catch (error) {
+    if (placeholder) placeholder.textContent = 'Failed to generate quick reference. Please check your API key.';
+    sidebar.style.display = 'none';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Regenerate Quick Reference';
+}
+
+// AI Analysis (Client Letter - informed by chat history)
+async function generateAnalysis() {
+  const btn = document.getElementById('generateAnalysisBtn');
+  const analysisDiv = document.getElementById('analysisReport');
+  const downloadBtn = document.getElementById('downloadPdfBtn');
+  const emailBtn = document.getElementById('emailAnalysisBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  analysisDiv.innerHTML = '<p>Creating personalized client letter based on your conversation...</p>';
 
   try {
     const response = await fetch(`/api/analyze/${BORROWER_ID}`, { method: 'POST' });
@@ -1137,29 +1185,27 @@ async function generateAnalysis() {
       analysisDiv.innerHTML = `<p class="text-muted">Error: ${error}</p>`;
       downloadBtn.style.display = 'none';
       emailBtn.style.display = 'none';
-      sidebar.style.display = 'none';
     } else {
-      // Try to parse as JSON (new format)
+      // Try to parse as JSON (new format - clientLetter only)
       let parsed = null;
       try {
         // Strip markdown code blocks if present (```json ... ```)
         let jsonStr = analysis.trim();
         if (jsonStr.startsWith('```')) {
-          // Remove opening ```json or ``` and closing ```
           jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
         }
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        // Not JSON, fallback to old format
         console.log('JSON parse failed, using fallback format:', e.message);
         parsed = null;
       }
 
-      if (parsed && parsed.loanOfficerSummary && parsed.clientLetter) {
-        // New JSON format - populate sidebar and client letter
-        populateLoanOfficerSidebar(parsed.loanOfficerSummary);
+      if (parsed && parsed.clientLetter) {
+        // New format - render client letter only
         renderClientLetter(parsed.clientLetter);
-        sidebar.style.display = 'block';
+      } else if (parsed && parsed.loanOfficerSummary && parsed.clientLetter) {
+        // Legacy format with both - just render client letter
+        renderClientLetter(parsed.clientLetter);
       } else {
         // Old format or plain text - use original rendering
         const formatted = analysis
@@ -1182,7 +1228,6 @@ async function generateAnalysis() {
           </div>
           <div class="analysis-content">${formatted}</div>
         `;
-        sidebar.style.display = 'none';
       }
 
       // Show download and email buttons
@@ -1192,7 +1237,6 @@ async function generateAnalysis() {
       // Show co-borrower checkbox if there's a co-borrower with email
       const coBorrowerOption = document.getElementById('coBorrowerEmailOption');
       const coEmailInput = document.querySelector('[name="co_email"]');
-      // Check if co-borrower toggle is set to Yes (button has 'active' class)
       const hasCoBorrower = document.getElementById('coBorrowerYes')?.classList.contains('active');
       if (coBorrowerOption && hasCoBorrower && coEmailInput && coEmailInput.value.trim()) {
         coBorrowerOption.style.display = 'inline-flex';
@@ -1204,11 +1248,10 @@ async function generateAnalysis() {
     analysisDiv.innerHTML = `<p class="text-muted">Failed to generate analysis. Please check your API key.</p>`;
     downloadBtn.style.display = 'none';
     emailBtn.style.display = 'none';
-    if (sidebar) sidebar.style.display = 'none';
   }
 
   btn.disabled = false;
-  btn.textContent = 'Generate Analysis';
+  btn.textContent = 'Regenerate Analysis Report';
 }
 
 // Populate the loan officer sidebar with analysis data
