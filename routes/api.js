@@ -609,19 +609,27 @@ router.post('/chat/:borrowerId', async (req, res) => {
     `[SOURCE: ${k.name} | Type: ${k.type} | Updated: ${k.last_updated}]\n${k.content}`
   ).join('\n\n---\n\n');
 
-  // Save user message
-  database.prepare(`
-    INSERT INTO chat_history (borrower_id, role, content)
-    VALUES (?, 'user', ?)
-  `).run(req.params.borrowerId, message);
-
   const systemPrompt = buildChatSystemPrompt(borrower, calculations, knowledgeContext);
 
-  const messages = chatHistory.map(m => ({
+  // Build messages array, ensuring proper alternation
+  let messages = chatHistory.map(m => ({
     role: m.role,
     content: m.content
   }));
-  messages.push({ role: 'user', content: message });
+
+  // Ensure messages start with user and alternate properly
+  // Filter out any duplicate consecutive roles
+  const validatedMessages = [];
+  let lastRole = 'assistant'; // Start expecting a user message
+  for (const msg of messages) {
+    if (msg.role !== lastRole) {
+      validatedMessages.push(msg);
+      lastRole = msg.role;
+    }
+  }
+
+  // Add current user message
+  validatedMessages.push({ role: 'user', content: message });
 
   try {
     const Anthropic = require('@anthropic-ai/sdk');
@@ -631,12 +639,17 @@ router.post('/chat/:borrowerId', async (req, res) => {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       system: systemPrompt,
-      messages
+      messages: validatedMessages
     });
 
     const reply = response.content[0].text;
 
-    // Save assistant response
+    // Save user message and assistant response only after success
+    database.prepare(`
+      INSERT INTO chat_history (borrower_id, role, content)
+      VALUES (?, 'user', ?)
+    `).run(req.params.borrowerId, message);
+
     database.prepare(`
       INSERT INTO chat_history (borrower_id, role, content)
       VALUES (?, 'assistant', ?)
@@ -644,8 +657,10 @@ router.post('/chat/:borrowerId', async (req, res) => {
 
     res.json({ reply });
   } catch (error) {
-    console.error('Claude API error:', error);
-    res.status(500).json({ error: 'Failed to get response' });
+    console.error('Claude chat API error:', error.message || error);
+    // Return more specific error message
+    const errorMsg = error.message || 'Failed to get response';
+    res.status(500).json({ error: errorMsg });
   }
 });
 
