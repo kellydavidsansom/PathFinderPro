@@ -1422,10 +1422,82 @@ function renderClientLetter(letter) {
   `;
 }
 
-// Download analysis as PDF
-function downloadAnalysisPDF() {
-  // Use direct navigation to let browser handle Content-Disposition
-  window.location.href = `/api/analysis/${BORROWER_ID}/pdf`;
+// Download analysis as PDF (uses edited content from DOM)
+async function downloadAnalysisPDF() {
+  const btn = document.getElementById('downloadPdfBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  try {
+    // Extract current content from DOM (includes any edits)
+    const content = extractLetterContent();
+
+    const response = await fetch(`/api/analysis/${BORROWER_ID}/pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+
+    if (!response.ok) {
+      throw new Error('PDF generation failed');
+    }
+
+    // Get the PDF blob and download it
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    // Extract filename from Content-Disposition header
+    const disposition = response.headers.get('Content-Disposition');
+    let filename = 'PathFinderPro-Analysis.pdf';
+    if (disposition) {
+      const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (match) {
+        filename = match[1].replace(/['"]/g, '');
+      }
+    }
+
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('PDF download error:', error);
+    alert('Failed to download PDF. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Download PDF';
+}
+
+// Extract letter content from DOM (for PDF/email with edits)
+function extractLetterContent() {
+  const content = document.getElementById('editableLetterContent');
+  if (!content) return null;
+
+  const getText = (selector) => {
+    const el = content.querySelector(selector);
+    return el ? el.innerText.trim() : '';
+  };
+
+  const getListItems = (selector) => {
+    const list = content.querySelector(selector);
+    if (!list) return [];
+    return Array.from(list.querySelectorAll('li')).map(li => li.innerText.trim());
+  };
+
+  return {
+    greeting: getText('.letter-greeting'),
+    introduction: getText('.letter-intro'),
+    highlights: getListItems('[data-section="highlights"]'),
+    improvements: getListItems('[data-section="improvements"]'),
+    options: getListItems('[data-section="options"]'),
+    clearpath: getText('.letter-clearpath'),
+    closing: getText('.letter-closing'),
+    signature: getText('.letter-signature')
+  };
 }
 
 // Email analysis to client (and copy to Kelly)

@@ -687,14 +687,17 @@ router.get('/export/mismo/:borrowerId', (req, res) => {
   res.send(xml);
 });
 
-// Download Analysis as PDF
-router.get('/analysis/:borrowerId/pdf', async (req, res) => {
+// Download Analysis as PDF (accepts POST with edited content or GET for cached)
+router.post('/analysis/:borrowerId/pdf', async (req, res) => {
   const database = db.getDb();
   const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.borrowerId);
 
-  if (!borrower || !borrower.ai_analysis) {
-    return res.status(404).json({ error: 'Analysis not found' });
+  if (!borrower) {
+    return res.status(404).json({ error: 'Borrower not found' });
   }
+
+  // Use edited content from request body if provided, otherwise fall back to cached
+  const editedContent = req.body.content;
 
   try {
     const PDFDocument = require('pdfkit');
@@ -739,12 +742,17 @@ router.get('/analysis/:borrowerId/pdf', async (req, res) => {
     const clearpathLogoPath = path.join(imagesPath, 'clearpath-logo.png');
     const reviewsPath = path.join(imagesPath, 'reviews.png');
 
-    // Try to parse as JSON (new format)
+    // Use edited content if provided, otherwise try to parse cached analysis
     let parsed = null;
-    try {
-      parsed = JSON.parse(borrower.ai_analysis);
-    } catch (e) {
-      parsed = null;
+    if (editedContent) {
+      // Convert edited content to the expected format
+      parsed = { clientLetter: editedContent };
+    } else if (borrower.ai_analysis) {
+      try {
+        parsed = JSON.parse(borrower.ai_analysis);
+      } catch (e) {
+        parsed = null;
+      }
     }
 
     // ===== HEADER =====

@@ -1139,7 +1139,30 @@
 
   <script>
     const BORROWER_ID = <%= borrower.id %>;
+    const SAVED_QUICK_REFERENCE = <%- borrower.quick_reference ? JSON.stringify(borrower.quick_reference) : 'null' %>;
   </script>
   <script src="/js/app.js?v=<%= Date.now() %>"></script>
+  <script>
+    // Initialize quick reference sidebar on page load if data exists
+    if (SAVED_QUICK_REFERENCE) {
+      try {
+        let jsonStr = SAVED_QUICK_REFERENCE.trim();
+        if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+        }
+        const parsed = JSON.parse(jsonStr);
+        if (parsed) {
+          populateLoanOfficerSidebar(parsed);
+          document.getElementById('loanOfficerSidebar').style.display = 'block';
+          const placeholder = document.getElementById('quickRefPlaceholder');
+          if (placeholder) placeholder.innerHTML = '<span style="color: var(--success);">Quick reference loaded. See sidebar for details.</span>';
+          const btn = document.getElementById('quickRefBtn');
+          if (btn) btn.textContent = 'Regenerate Quick Reference';
+        }
+      } catch (e) {
+        console.log('Could not parse saved quick reference:', e.message);
+      }
+    }
+  </script>
 </body>
 </html>
