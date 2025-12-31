@@ -1142,9 +1142,16 @@ async function generateAnalysis() {
       // Try to parse as JSON (new format)
       let parsed = null;
       try {
-        parsed = JSON.parse(analysis);
+        // Strip markdown code blocks if present (```json ... ```)
+        let jsonStr = analysis.trim();
+        if (jsonStr.startsWith('```')) {
+          // Remove opening ```json or ``` and closing ```
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+        }
+        parsed = JSON.parse(jsonStr);
       } catch (e) {
         // Not JSON, fallback to old format
+        console.log('JSON parse failed, using fallback format:', e.message);
         parsed = null;
       }
 
