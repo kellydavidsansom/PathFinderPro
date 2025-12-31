@@ -1302,6 +1302,51 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.8;
 }
 
+/* Edit Mode for Analysis Report */
+.edit-mode {
+  background: white;
+  border: 2px dashed var(--sage);
+  border-radius: 8px;
+  padding: var(--space-lg);
+}
+
+.edit-mode::before {
+  content: "Edit Mode - Click any highlighted text to edit";
+  display: block;
+  background: var(--sage);
+  color: white;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.editing {
+  background: rgba(184, 196, 184, 0.15);
+  border: 1px dashed var(--sage);
+  border-radius: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  outline: none;
+  min-height: 1.5em;
+}
+
+.editing:focus {
+  background: rgba(184, 196, 184, 0.25);
+  border-color: var(--primary);
+}
+
+.editing:hover {
+  background: rgba(184, 196, 184, 0.2);
+}
+
+.editable-list.editing li {
+  margin-bottom: var(--space-xs);
+}
+
 /* Analysis Report Footer */
 .analysis-footer {
   margin-top: var(--space-xl);

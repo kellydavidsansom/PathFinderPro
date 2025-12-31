@@ -1230,7 +1230,9 @@ async function generateAnalysis() {
         `;
       }
 
-      // Show download and email buttons
+      // Show edit, download, and email buttons
+      const editBtn = document.getElementById('editReportBtn');
+      if (editBtn) editBtn.style.display = 'inline-flex';
       downloadBtn.style.display = 'inline-flex';
       emailBtn.style.display = 'inline-flex';
 
@@ -1246,12 +1248,59 @@ async function generateAnalysis() {
     }
   } catch (error) {
     analysisDiv.innerHTML = `<p class="text-muted">Failed to generate analysis. Please check your API key.</p>`;
+    const editBtn = document.getElementById('editReportBtn');
+    if (editBtn) editBtn.style.display = 'none';
     downloadBtn.style.display = 'none';
     emailBtn.style.display = 'none';
   }
 
   btn.disabled = false;
   btn.textContent = 'Regenerate Analysis Report';
+}
+
+// Toggle edit mode for the analysis report
+let isEditMode = false;
+function toggleEditMode() {
+  const editBtn = document.getElementById('editReportBtn');
+  const editableContent = document.getElementById('editableLetterContent');
+
+  if (!editableContent) return;
+
+  isEditMode = !isEditMode;
+
+  if (isEditMode) {
+    // Enable editing
+    editBtn.textContent = 'Done Editing';
+    editBtn.classList.add('btn-primary');
+
+    // Make text sections editable
+    editableContent.querySelectorAll('.editable-text').forEach(el => {
+      el.contentEditable = 'true';
+      el.classList.add('editing');
+    });
+
+    // Make list items editable
+    editableContent.querySelectorAll('.editable-list li').forEach(el => {
+      el.contentEditable = 'true';
+      el.classList.add('editing');
+    });
+
+    // Add visual indicator
+    editableContent.classList.add('edit-mode');
+  } else {
+    // Disable editing
+    editBtn.textContent = 'Edit Report';
+    editBtn.classList.remove('btn-primary');
+
+    // Remove contenteditable
+    editableContent.querySelectorAll('[contenteditable]').forEach(el => {
+      el.contentEditable = 'false';
+      el.classList.remove('editing');
+    });
+
+    // Remove visual indicator
+    editableContent.classList.remove('edit-mode');
+  }
 }
 
 // Populate the loan officer sidebar with analysis data
@@ -1281,21 +1330,22 @@ function populateLoanOfficerSidebar(summary) {
 // Render the client letter format
 function renderClientLetter(letter) {
   const analysisDiv = document.getElementById('analysisReport');
+  const editBtn = document.getElementById('editReportBtn');
 
-  // Build highlights list
+  // Build highlights list - editable
   const highlightsList = letter.highlights && letter.highlights.length
-    ? `<ul class="client-letter-list">${letter.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}</ul>`
-    : '';
+    ? `<ul class="client-letter-list editable-list" data-section="highlights">${letter.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}</ul>`
+    : '<ul class="client-letter-list editable-list" data-section="highlights"><li>Add highlight here...</li></ul>';
 
-  // Build improvements list
+  // Build improvements list - editable
   const improvementsList = letter.improvements && letter.improvements.length
-    ? `<ul class="client-letter-list">${letter.improvements.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
-    : '';
+    ? `<ul class="client-letter-list editable-list" data-section="improvements">${letter.improvements.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+    : '<ul class="client-letter-list editable-list" data-section="improvements"><li>Add improvement here...</li></ul>';
 
-  // Build options list (numbered)
+  // Build options list (numbered) - editable
   const optionsList = letter.options && letter.options.length
-    ? `<ol class="client-letter-options">${letter.options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
-    : '';
+    ? `<ol class="client-letter-options editable-list" data-section="options">${letter.options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
+    : '<ol class="client-letter-options editable-list" data-section="options"><li>Add option here...</li></ol>';
 
   // Format greeting with phone on next line
   const greetingParts = (letter.greeting || '').split('\n');
@@ -1325,11 +1375,11 @@ function renderClientLetter(letter) {
     <div class="analysis-agent-info">
       <strong>Kelly Sansom</strong> - Your Mortgage Specialist | NMLS #2510508 | <a href="tel:8018911846">(801) 891-1846</a> | <a href="https://clearpathutah.com" target="_blank">clearpathutah.com</a> | <a href="mailto:hello@clearpathutah.com">hello@clearpathutah.com</a>
     </div>
-    <div class="analysis-content client-letter">
-      <p class="letter-greeting">${escapeHtml(greetingName)}</p>
+    <div class="analysis-content client-letter" id="editableLetterContent">
+      <p class="letter-greeting editable-text" data-section="greeting">${escapeHtml(greetingName)}</p>
       ${greetingPhone ? `<p class="letter-phone">${escapeHtml(greetingPhone)}</p>` : ''}
 
-      <p class="letter-intro">${escapeHtml(letter.introduction || '')}</p>
+      <p class="letter-intro editable-text" data-section="introduction">${escapeHtml(letter.introduction || '')}</p>
 
       <h3 class="letter-section-title">YOUR HIGHLIGHTS</h3>
       ${highlightsList}
@@ -1341,9 +1391,9 @@ function renderClientLetter(letter) {
       ${optionsList}
 
       <h3 class="letter-section-title">YOUR CLEARPATH FORWARD</h3>
-      <p class="letter-clearpath">${escapeHtml(letter.clearpath || '')}</p>
+      <p class="letter-clearpath editable-text" data-section="clearpath">${escapeHtml(letter.clearpath || '')}</p>
 
-      <p class="letter-closing">${escapeHtml(letter.closing || '')}</p>
+      <p class="letter-closing editable-text" data-section="closing">${escapeHtml(letter.closing || '')}</p>
 
       <div class="letter-signature">
         ${signatureHtml}
