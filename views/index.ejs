@@ -347,29 +347,43 @@
     const dropZone = document.getElementById('pdfDropZone');
     const pdfInput = document.getElementById('pdfInput');
 
-    dropZone.addEventListener('click', () => pdfInput.click());
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      const files = e.dataTransfer.files;
-      for (const file of files) {
-        if (file.type === 'application/pdf') {
+    if (dropZone && pdfInput) {
+      dropZone.addEventListener('click', () => pdfInput.click());
+
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+      });
+
+      dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+      });
+
+      dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        for (const file of files) {
+          // Check both MIME type and file extension for better compatibility
+          const isPdf = file.type === 'application/pdf' ||
+                        file.name.toLowerCase().endsWith('.pdf');
+          if (isPdf) {
+            await uploadPdf(file);
+          }
+        }
+      });
+
+      pdfInput.addEventListener('change', async () => {
+        for (const file of pdfInput.files) {
           await uploadPdf(file);
         }
-      }
-    });
-
-    pdfInput.addEventListener('change', async () => {
-      for (const file of pdfInput.files) {
-        await uploadPdf(file);
-      }
-      pdfInput.value = '';
-    });
+        pdfInput.value = '';
+      });
+    }
 
     async function uploadPdf(file) {
       const formData = new FormData();
