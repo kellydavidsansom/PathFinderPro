@@ -341,8 +341,6 @@ function buildArivePayload(b, calc) {
       occupancy: mapOccupancy(b.current_housing),
       monthlyRentAmt: b.current_housing === 'Rent' && b.monthly_rent ? String(b.monthly_rent) : undefined,
       hasCoBorrower: b.has_coborrower ? true : false,
-      addressDurationMonths: b.address_months || 0,
-      addressDurationYears: b.address_years || 0,
       currentResidence: (b.street_address || b.city) ? {
         lineText: b.street_address || undefined,
         city: b.city || undefined,
@@ -368,17 +366,15 @@ function buildArivePayload(b, calc) {
       birthDate: formatDate(b.co_date_of_birth),
       cellPhone: formatPhone(b.co_phone),
       ssn: b.co_ssn ? b.co_ssn.replace(/\D/g, '') : undefined,
-      militaryServiceType: mapMilitary(b.co_military_status),
-      addressDurationMonths: b.co_address_months || 0,
-      addressDurationYears: b.co_address_years || 0,
-      currentResidence: (b.co_street_address || b.co_city) ? {
-        lineText: b.co_street_address || undefined,
-        city: b.co_city || undefined,
-        state: mapState(b.co_state),
-        postalCode: b.co_zip || undefined
-      } : undefined
+      militaryServiceType: mapMilitary(b.co_military_status)
     };
   }
+
+  // Add Zapier-specific fields (not part of Arive API but useful for mapping)
+  payload.zapier_addressDurationMonths = b.address_months || 0;
+  payload.zapier_addressDurationYears = b.address_years || 0;
+  payload.zapier_coAddressDurationMonths = b.co_address_months || 0;
+  payload.zapier_coAddressDurationYears = b.co_address_years || 0;
 
   // Remove undefined values
   return JSON.parse(JSON.stringify(payload));
