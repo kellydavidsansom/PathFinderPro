@@ -260,15 +260,22 @@ function buildArivePayload(b, calc) {
     return undefined;
   };
 
-  // Map employment type
+  // Map employment type (form stores lowercase values)
   const mapEmployment = (type) => {
     const map = {
-      'W-2 Employee': 'employed',
-      'Self-Employed': 'self-employed',
-      'Retired': 'retired',
-      '1099 Contractor': 'self-employed'
+      'employed': 'employed',
+      'self-employed': 'self-employed',
+      'retired': 'retired',
+      'active military duty': 'employed',
+      'unemployed': undefined
     };
     return map[type] || undefined;
+  };
+
+  // Map mortgage type (exclude invalid values)
+  const mapMortgageType = (type) => {
+    const validTypes = ['Conventional', 'FHA', 'VA', 'USDARuralDevelopment', 'NonQM'];
+    return validTypes.includes(type) ? type : undefined;
   };
 
   // Build the payload matching Arive API exactly
@@ -284,7 +291,7 @@ function buildArivePayload(b, calc) {
     crmReferenceId: String(b.id),
 
     // Loan details
-    mortgageType: b.preferred_loan_type || undefined,
+    mortgageType: mapMortgageType(b.preferred_loan_type),
     baseLoanAmount: Math.max(0, calc.loanAmount || 0),
     purchasePriceOrEstimatedValue: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price,
     propertyType: mapPropertyType(b.property_type),
