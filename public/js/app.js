@@ -1342,10 +1342,10 @@ function renderClientLetter(letter) {
     ? `<ul class="client-letter-list editable-list" data-section="improvements">${letter.improvements.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
     : '<ul class="client-letter-list editable-list" data-section="improvements"><li>Add improvement here...</li></ul>';
 
-  // Build options list (numbered) - editable
+  // Build options list (bullet points) - editable
   const optionsList = letter.options && letter.options.length
-    ? `<ol class="client-letter-options editable-list" data-section="options">${letter.options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
-    : '<ol class="client-letter-options editable-list" data-section="options"><li>Add option here...</li></ol>';
+    ? `<ul class="client-letter-options editable-list" data-section="options">${letter.options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ul>`
+    : '<ul class="client-letter-options editable-list" data-section="options"><li>Add option here...</li></ul>';
 
   // Format greeting with phone on next line
   const greetingParts = (letter.greeting || '').split('\n');
@@ -1432,6 +1432,13 @@ async function downloadAnalysisPDF() {
     // Extract current content from DOM (includes any edits)
     const content = extractLetterContent();
 
+    // Debug logging
+    console.log('=== PDF Download Debug ===');
+    console.log('Extracted content:', content);
+    console.log('Options:', content?.options);
+    console.log('Highlights:', content?.highlights);
+    console.log('Improvements:', content?.improvements);
+
     const response = await fetch(`/api/analysis/${BORROWER_ID}/pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1485,7 +1492,23 @@ function extractLetterContent() {
   const getListItems = (selector) => {
     const list = content.querySelector(selector);
     if (!list) return [];
-    return Array.from(list.querySelectorAll('li')).map(li => li.innerText.trim());
+    // Filter out empty items, placeholder text, and whitespace-only items
+    return Array.from(list.querySelectorAll('li'))
+      .map(li => {
+        // Get text and strip all whitespace including &nbsp;
+        let text = li.innerText || li.textContent || '';
+        text = text.replace(/\u00A0/g, ' '); // Replace &nbsp; with regular space
+        text = text.replace(/[\s\n\r]+/g, ' '); // Normalize whitespace
+        text = text.trim();
+        return text;
+      })
+      .filter(text => {
+        // Filter out empty, very short, or placeholder items
+        if (!text || text.length < 3) return false;
+        if (text.startsWith('Add ')) return false;
+        if (text === '(Empty - will be removed from PDF)') return false;
+        return true;
+      });
   };
 
   return {

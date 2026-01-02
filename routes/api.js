@@ -699,6 +699,16 @@ router.post('/analysis/:borrowerId/pdf', async (req, res) => {
   // Use edited content from request body if provided, otherwise fall back to cached
   const editedContent = req.body.content;
 
+  // Debug logging
+  console.log('=== PDF Generation Debug ===');
+  console.log('Received edited content:', editedContent ? 'YES' : 'NO');
+  if (editedContent) {
+    console.log('Options array:', JSON.stringify(editedContent.options));
+    console.log('Highlights array:', JSON.stringify(editedContent.highlights));
+    console.log('Improvements array:', JSON.stringify(editedContent.improvements));
+    console.log('Clearpath text:', editedContent.clearpath?.substring(0, 100));
+  }
+
   try {
     const PDFDocument = require('pdfkit');
     const path = require('path');
@@ -871,9 +881,22 @@ router.post('/analysis/:borrowerId/pdf', async (req, res) => {
         doc.moveDown(1.2);
       }
 
-      // Helper for sections
-      const renderSection = (title, items, numbered) => {
-        if (!items || !items.length) return;
+      // Helper for sections (all bullet points, no numbers)
+      const renderSection = (title, items) => {
+        console.log(`renderSection "${title}" - input items:`, items);
+
+        // Filter out empty items - must have at least 3 chars of real content
+        const validItems = (items || [])
+          .map(item => {
+            if (!item) return '';
+            // Normalize whitespace and trim
+            return item.replace(/\u00A0/g, ' ').replace(/[\s\n\r]+/g, ' ').trim();
+          })
+          .filter(item => item && item.length >= 3);
+
+        console.log(`renderSection "${title}" - valid items after filter:`, validItems);
+
+        if (!validItems.length) return;
 
         // Section title with underline
         doc.fontSize(11).fillColor('#2a2a2a').font('Helvetica-Bold');
@@ -885,22 +908,23 @@ router.post('/analysis/:borrowerId/pdf', async (req, res) => {
 
         // Items - strip any existing bullets/numbers from the text
         doc.fontSize(11).fillColor('#333333').font('Helvetica');
-        items.forEach((item, i) => {
+        validItems.forEach((item) => {
           // Remove leading bullets, dashes, or numbers like "1.", "1)", "•", "-"
           const cleanItem = item.replace(/^[\s]*[-•*]\s*/, '').replace(/^[\s]*\d+[.)]\s*/, '').trim();
-          const prefix = numbered ? `${i+1}. ` : '• ';
-          doc.text(prefix + cleanItem, margin, doc.y, { width: contentWidth, lineGap: 2 });
+          doc.text('• ' + cleanItem, margin, doc.y, { width: contentWidth, lineGap: 2 });
           doc.moveDown(0.3);
         });
         doc.moveDown(0.8);
       };
 
-      renderSection('YOUR HIGHLIGHTS', letter.highlights, false);
-      renderSection('ROOM FOR IMPROVEMENT', letter.improvements, false);
-      renderSection('OPTIONS TO STRENGTHEN YOUR PROFILE', letter.options, true);
+      renderSection('YOUR HIGHLIGHTS', letter.highlights);
+      renderSection('ROOM FOR IMPROVEMENT', letter.improvements);
+      renderSection('OPTIONS TO STRENGTHEN YOUR PROFILE', letter.options);
 
-      // ClearPath Forward
-      if (letter.clearpath) {
+      // ClearPath Forward - render as flowing text (no fixed-height box)
+      const clearpathText = letter.clearpath ? letter.clearpath.trim() : '';
+      if (clearpathText) {
+        // Section title with underline
         doc.fontSize(11).fillColor('#2a2a2a').font('Helvetica-Bold');
         doc.text('YOUR CLEARPATH FORWARD', margin);
         const titleWidth = doc.widthOfString('YOUR CLEARPATH FORWARD');
@@ -908,20 +932,10 @@ router.post('/analysis/:borrowerId/pdf', async (req, res) => {
         doc.moveTo(margin, doc.y + 2).lineTo(margin + titleWidth, doc.y + 2).stroke();
         doc.moveDown(0.6);
 
-        // Calculate box height
-        doc.fontSize(11).font('Helvetica');
-        const textHeight = doc.heightOfString(letter.clearpath, { width: contentWidth - 30 });
-        const boxHeight = textHeight + 24;
-        const boxY = doc.y;
-
-        // Draw box with left accent
-        doc.rect(margin, boxY, contentWidth, boxHeight).fill('#EDF2ED');
-        doc.rect(margin, boxY, 5, boxHeight).fill('#8FA38F');
-
-        // Text inside box
-        doc.fillColor('#333333');
-        doc.text(letter.clearpath, margin + 18, boxY + 12, { width: contentWidth - 30, lineGap: 2 });
-        doc.y = boxY + boxHeight + 15;
+        // Render as normal flowing text - PDFKit handles page breaks automatically
+        doc.fontSize(11).font('Helvetica').fillColor('#333333');
+        doc.text(clearpathText, margin, doc.y, { width: contentWidth, lineGap: 3 });
+        doc.moveDown(1);
       }
 
       // Closing
@@ -947,17 +961,16 @@ router.post('/analysis/:borrowerId/pdf', async (req, res) => {
     }
 
     // ===== FOOTER =====
-    // Small space after signature
-    doc.moveDown(1.5);
+    // Footer always goes at the bottom of the current page
+    const footerHeight = 100;
+    let footerY = pageHeight - footerHeight - 40;
 
-    // Check if we need a new page for footer (need ~120px for footer content)
-    const footerNeeded = 120;
-    if (doc.y > pageHeight - footerNeeded - 30) {
+    // If content is below where footer would start, add a new page
+    if (doc.y > footerY - 20) {
       doc.addPage();
+      // Recalculate footer position for new page
+      footerY = pageHeight - footerHeight - 40;
     }
-
-    // Footer flows from current position
-    let footerY = doc.y;
 
     // Divider line
     doc.strokeColor('#e0e0e0').lineWidth(0.5);
@@ -1318,7 +1331,7 @@ Structure it EXACTLY like this:
 - introduction: A thank you for allowing me to run some numbers. If there was a conversation, reference that we discussed their situation. Explain this analysis is a starting point to help them understand where they stand. Keep it warm and encouraging. (2-3 sentences)
 - highlights: Section titled "YOUR HIGHLIGHTS" - What's working in their favor (3-5 bullet points, positive and encouraging)
 - improvements: Section titled "ROOM FOR IMPROVEMENT" - Areas that could be stronger (2-4 bullet points, constructive not negative)
-- options: Section titled "OPTIONS TO STRENGTHEN YOUR PROFILE" - Specific actionable things they could do. If discussed in the conversation, prioritize those options. (3-5 numbered items with brief explanations)
+- options: Section titled "OPTIONS TO STRENGTHEN YOUR PROFILE" - Specific actionable things they could do. If discussed in the conversation, prioritize those options. (3-5 bullet points with brief explanations)
 - clearpath: Section titled "YOUR CLEARPATH FORWARD" - A roadmap paragraph giving them clear next steps. Reference any specific plans or strategies discussed in the conversation. Be specific and actionable. End on an encouraging note.
 - closing: "I'm here to help guide you every step of the way. Please don't hesitate to reach out with any questions."
 - signature: "Warmly," then "Kelly Sansom" then "Your Mortgage Specialist" then "(801) 891-1846" then "hello@clearpathutah.com"
@@ -1330,7 +1343,7 @@ Return ONLY valid JSON, no markdown code blocks. Example structure:
     "introduction": "Thank you for taking the time to discuss your home buying goals with me...",
     "highlights": ["Strong credit score of 720", "Stable employment history"],
     "improvements": ["DTI is on the higher side", "Limited reserves"],
-    "options": ["1. Pay down your car loan...", "2. Consider adding..."],
+    "options": ["Pay down your car loan to reduce DTI", "Consider adding a co-signer for better terms"],
     "clearpath": "Based on our conversation, here's your path forward...",
     "closing": "I'm here to help...",
     "signature": "Warmly,\\nKelly Sansom\\nYour Mortgage Specialist\\n(801) 891-1846\\nhello@clearpathutah.com"

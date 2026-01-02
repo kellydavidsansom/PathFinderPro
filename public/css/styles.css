@@ -1311,7 +1311,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .edit-mode::before {
-  content: "Edit Mode - Click any highlighted text to edit";
+  content: "Edit Mode - Click text to edit • Clear a bullet to remove it from PDF";
   display: block;
   background: var(--sage);
   color: white;
@@ -1345,6 +1345,37 @@ h1, h2, h3, h4, h5, h6 {
 
 .editable-list.editing li {
   margin-bottom: var(--space-xs);
+}
+
+/* List items in edit mode */
+.edit-mode .editable-list li {
+  position: relative;
+  padding-right: 20px;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  transition: all 0.15s ease;
+}
+
+.edit-mode .editable-list li:hover {
+  background: rgba(184, 196, 184, 0.15);
+  border-color: var(--sage);
+}
+
+.edit-mode .editable-list li[contenteditable="true"]:focus {
+  background: rgba(184, 196, 184, 0.25);
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* Empty list item hint - delete by clearing content */
+.edit-mode .editable-list li:empty::before,
+.edit-mode .editable-list li:only-child:empty::before {
+  content: "(Empty - will be removed from PDF)";
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85em;
 }
 
 /* Analysis Report Footer */
