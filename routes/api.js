@@ -413,19 +413,29 @@ async function triggerWebhooks(eventType, data) {
       SELECT * FROM zapier_webhooks WHERE event_type = ?
     `).all(eventType);
 
+    // Format borrower data for Zapier if present
+    let payload = {
+      event: eventType,
+      timestamp: new Date().toISOString()
+    };
+
+    if (data.borrower && data.calculations) {
+      // Send formatted data that Zapier can use directly for Arive
+      payload.borrower = formatBorrowerForZapier(data.borrower, data.calculations);
+      payload.borrower_id = data.borrower.id;
+    } else {
+      payload.data = data;
+    }
+
     for (const webhook of webhooks) {
       try {
         const fetch = (await import('node-fetch')).default;
-        await fetch(webhook.webhook_url, {
+        const response = await fetch(webhook.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: eventType,
-            timestamp: new Date().toISOString(),
-            data
-          })
+          body: JSON.stringify(payload)
         });
-        console.log(`Webhook triggered: ${webhook.webhook_url}`);
+        console.log(`Webhook triggered: ${webhook.webhook_url} - Status: ${response.status}`);
       } catch (err) {
         console.error(`Webhook failed: ${webhook.webhook_url}`, err.message);
       }
@@ -434,6 +444,83 @@ async function triggerWebhooks(eventType, data) {
     console.error('Error triggering webhooks:', err);
   }
 }
+
+// Simple webhook registration (for easy Zapier setup)
+router.post('/webhooks/register', (req, res) => {
+  const database = db.getDb();
+  const { url, event } = req.body;
+
+  if (!url) {
+    return res.status(400).json({ error: 'Webhook URL is required' });
+  }
+
+  // Create webhooks table if not exists
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS zapier_webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      webhook_url TEXT NOT NULL,
+      event_type TEXT DEFAULT 'borrower.qualified',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Check if webhook already exists
+  const existing = database.prepare(`
+    SELECT * FROM zapier_webhooks WHERE webhook_url = ?
+  `).get(url);
+
+  if (existing) {
+    return res.json({ success: true, message: 'Webhook already registered', webhook_id: existing.id });
+  }
+
+  const result = database.prepare(`
+    INSERT INTO zapier_webhooks (webhook_url, event_type)
+    VALUES (?, ?)
+  `).run(url, event || 'borrower.qualified');
+
+  console.log(`Webhook registered: ${url} for event: ${event || 'borrower.qualified'}`);
+
+  res.json({ success: true, webhook_id: result.lastInsertRowid });
+});
+
+// List registered webhooks
+router.get('/webhooks', (req, res) => {
+  const database = db.getDb();
+
+  try {
+    const webhooks = database.prepare(`
+      SELECT * FROM zapier_webhooks ORDER BY created_at DESC
+    `).all();
+    res.json(webhooks);
+  } catch (err) {
+    res.json([]);
+  }
+});
+
+// Test webhook (sends sample data)
+router.post('/webhooks/test', async (req, res) => {
+  const database = db.getDb();
+
+  // Get a sample borrower or create test data
+  const borrower = database.prepare('SELECT * FROM borrowers ORDER BY id DESC LIMIT 1').get();
+
+  if (!borrower) {
+    return res.status(400).json({ error: 'No borrowers in database to test with' });
+  }
+
+  borrower.employers = JSON.parse(borrower.employers || '[]');
+  borrower.other_income = JSON.parse(borrower.other_income || '[]');
+  borrower.co_employers = JSON.parse(borrower.co_employers || '[]');
+  borrower.co_other_income = JSON.parse(borrower.co_other_income || '[]');
+  borrower.assets = JSON.parse(borrower.assets || '[]');
+  borrower.debts = JSON.parse(borrower.debts || '[]');
+
+  const calculations = calculateBorrowerMetrics(borrower);
+
+  await triggerWebhooks('borrower.qualified', { borrower, calculations });
+
+  res.json({ success: true, message: 'Test webhook sent', borrower_id: borrower.id });
+});
 
 // ============================================
 // EXISTING ENDPOINTS
