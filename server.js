@@ -85,7 +85,6 @@ app.get('/logout', (req, res) => {
 });
 
 // Public webhook endpoints (before auth middleware)
-const db = require('./database');
 const { calculateBorrowerMetrics } = require('./routes/borrowers');
 
 app.post('/webhooks/register', express.json(), (req, res) => {
