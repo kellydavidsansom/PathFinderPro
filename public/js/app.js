@@ -17,33 +17,188 @@ document.addEventListener('DOMContentLoaded', () => {
   initDebtListeners();
   initPropertyCalculations();
   initCreditFlags();
-  initDateFormatting();
+  initLiveFormatting();
+  initSameAddressCheckbox();
   loadBorrowerData();
 });
 
-// Date of Birth auto-formatting (04042000 -> 04/04/2000)
-function initDateFormatting() {
-  const dobFields = document.querySelectorAll('input[name="date_of_birth"], input[name="co_date_of_birth"]');
+// Live formatting for phone, SSN, date, and currency fields
+function initLiveFormatting() {
+  // Phone formatting: (XXX) XXX-XXXX
+  const phoneFields = document.querySelectorAll('input[name="phone"], input[name="co_phone"]');
+  phoneFields.forEach(field => {
+    field.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 10) value = value.slice(0, 10);
 
-  dobFields.forEach(field => {
+      if (value.length >= 6) {
+        e.target.value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+      } else if (value.length >= 3) {
+        e.target.value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+      } else if (value.length > 0) {
+        e.target.value = `(${value}`;
+      }
+    });
+
+    // Also format on blur for pasted values
     field.addEventListener('blur', () => {
-      const value = field.value.replace(/\D/g, ''); // Remove non-digits
+      const value = field.value.replace(/\D/g, '');
+      if (value.length === 10) {
+        field.value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+        scheduleAutoSave({ [field.name]: field.value });
+      }
+    });
+  });
+
+  // SSN formatting: XXX-XX-XXXX (live as you type)
+  const ssnFields = document.querySelectorAll('input[name="ssn"], input[name="co_ssn"]');
+  ssnFields.forEach(field => {
+    field.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 9) value = value.slice(0, 9);
+
+      if (value.length >= 5) {
+        e.target.value = `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
+      } else if (value.length >= 3) {
+        e.target.value = `${value.slice(0, 3)}-${value.slice(3)}`;
+      } else {
+        e.target.value = value;
+      }
+    });
+
+    field.addEventListener('blur', () => {
+      const value = field.value.replace(/\D/g, '');
+      if (value.length === 9) {
+        field.value = `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
+        scheduleAutoSave({ [field.name]: field.value });
+      }
+    });
+  });
+
+  // Date formatting: MM/DD/YYYY (live as you type)
+  const dateFields = document.querySelectorAll('input[name="date_of_birth"], input[name="co_date_of_birth"]');
+  dateFields.forEach(field => {
+    field.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 8) value = value.slice(0, 8);
+
+      if (value.length >= 4) {
+        e.target.value = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
+      } else if (value.length >= 2) {
+        e.target.value = `${value.slice(0, 2)}/${value.slice(2)}`;
+      } else {
+        e.target.value = value;
+      }
+    });
+
+    field.addEventListener('blur', () => {
+      let value = field.value.replace(/\D/g, '');
 
       if (value.length === 8) {
-        // Format as MM/DD/YYYY
-        const formatted = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+        const formatted = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4, 8)}`;
         field.value = formatted;
-        // Trigger save
         scheduleAutoSave({ [field.name]: formatted });
       } else if (value.length === 6) {
         // Format as MM/DD/YY -> MM/DD/19YY or MM/DD/20YY
         const year = parseInt(value.slice(4, 6));
         const fullYear = year > 50 ? '19' + value.slice(4, 6) : '20' + value.slice(4, 6);
-        const formatted = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + fullYear;
+        const formatted = `${value.slice(0, 2)}/${value.slice(2, 4)}/${fullYear}`;
         field.value = formatted;
         scheduleAutoSave({ [field.name]: formatted });
       }
     });
+  });
+
+  // Currency formatting for number inputs: $X,XXX
+  const currencyFields = document.querySelectorAll(
+    'input[name="purchase_price"], input[name="down_payment_amount"], ' +
+    'input[name="property_value"], input[name="current_loan_balance"], ' +
+    'input[name="cash_out_amount"], input[name="monthly_rent"], ' +
+    'input[name="property_taxes_annual"], input[name="insurance_annual"], ' +
+    'input[name="hoa_monthly"], input[name="collections_amount"]'
+  );
+
+  currencyFields.forEach(field => {
+    // Format on blur
+    field.addEventListener('blur', () => {
+      const value = parseFloat(field.value.replace(/[^0-9.-]/g, '')) || 0;
+      if (value > 0) {
+        // Keep the raw number in the field for calculations, but add data attribute for display
+        field.dataset.formattedValue = formatCurrency(value);
+      }
+    });
+  });
+
+  // ZIP code formatting (5 or 9 digits with hyphen)
+  const zipFields = document.querySelectorAll('input[name="zip"], input[name="co_zip"], input[name="subject_property_zip"]');
+  zipFields.forEach(field => {
+    field.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 9) value = value.slice(0, 9);
+
+      if (value.length > 5) {
+        e.target.value = `${value.slice(0, 5)}-${value.slice(5)}`;
+      } else {
+        e.target.value = value;
+      }
+    });
+  });
+}
+
+// Same Address as Primary Borrower checkbox
+function initSameAddressCheckbox() {
+  const checkbox = document.getElementById('sameAddressAsPrimary');
+  if (!checkbox) return;
+
+  checkbox.addEventListener('change', () => {
+    if (checkbox.checked) {
+      // Copy address from primary borrower to co-borrower
+      const streetAddress = document.querySelector('[name="street_address"]')?.value || '';
+      const city = document.querySelector('[name="city"]')?.value || '';
+      const state = document.querySelector('[name="state"]')?.value || '';
+      const zip = document.querySelector('[name="zip"]')?.value || '';
+
+      document.querySelector('[name="co_street_address"]').value = streetAddress;
+      document.querySelector('[name="co_city"]').value = city;
+      document.querySelector('[name="co_state"]').value = state;
+      document.querySelector('[name="co_zip"]').value = zip;
+
+      // Disable co-borrower address fields when same address is checked
+      document.querySelector('[name="co_street_address"]').disabled = true;
+      document.querySelector('[name="co_city"]').disabled = true;
+      document.querySelector('[name="co_state"]').disabled = true;
+      document.querySelector('[name="co_zip"]').disabled = true;
+
+      // Save the co-borrower address
+      scheduleAutoSave({
+        co_street_address: streetAddress,
+        co_city: city,
+        co_state: state,
+        co_zip: zip
+      });
+    } else {
+      // Re-enable co-borrower address fields
+      document.querySelector('[name="co_street_address"]').disabled = false;
+      document.querySelector('[name="co_city"]').disabled = false;
+      document.querySelector('[name="co_state"]').disabled = false;
+      document.querySelector('[name="co_zip"]').disabled = false;
+    }
+  });
+
+  // Also update co-borrower address when primary address changes (if checkbox is checked)
+  ['street_address', 'city', 'state', 'zip'].forEach(fieldName => {
+    const field = document.querySelector(`[name="${fieldName}"]`);
+    if (field) {
+      field.addEventListener('change', () => {
+        if (checkbox.checked) {
+          const coField = document.querySelector(`[name="co_${fieldName}"]`);
+          if (coField) {
+            coField.value = field.value;
+            scheduleAutoSave({ [`co_${fieldName}`]: field.value });
+          }
+        }
+      });
+    }
   });
 }
 

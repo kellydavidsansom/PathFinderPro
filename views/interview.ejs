@@ -134,6 +134,15 @@
             <label>ZIP</label>
             <input type="text" name="zip" value="<%= borrower.zip || '' %>" maxlength="10" data-autosave>
           </div>
+          <div class="form-group">
+            <label>Time at Address</label>
+            <div class="time-at-address-inputs">
+              <input type="number" name="address_years" value="<%= borrower.address_years || '' %>" placeholder="Years" min="0" data-autosave>
+              <span>yrs</span>
+              <input type="number" name="address_months" value="<%= borrower.address_months || '' %>" placeholder="Months" min="0" max="11" data-autosave>
+              <span>mos</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-grid">
@@ -245,7 +254,13 @@
             </div>
           </div>
 
-          <h4>Current Address</h4>
+          <div class="section-header" style="margin-top: 1rem;">
+            <h4>Current Address</h4>
+            <label class="checkbox-label same-address-checkbox">
+              <input type="checkbox" id="sameAddressAsPrimary">
+              <span>Same as Primary Borrower</span>
+            </label>
+          </div>
           <div class="form-grid">
             <div class="form-group col-span-2">
               <label>Street Address</label>
@@ -262,6 +277,15 @@
             <div class="form-group">
               <label>ZIP</label>
               <input type="text" name="co_zip" value="<%= borrower.co_zip || '' %>" maxlength="10" data-autosave>
+            </div>
+            <div class="form-group">
+              <label>Time at Address</label>
+              <div class="time-at-address-inputs">
+                <input type="number" name="co_address_years" value="<%= borrower.co_address_years || '' %>" placeholder="Years" min="0" data-autosave>
+                <span>yrs</span>
+                <input type="number" name="co_address_months" value="<%= borrower.co_address_months || '' %>" placeholder="Months" min="0" max="11" data-autosave>
+                <span>mos</span>
+              </div>
             </div>
           </div>
 

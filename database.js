@@ -220,6 +220,12 @@ function initialize() {
   addColumnIfNotExists('knowledge_sources', 'requires_js', 'INTEGER DEFAULT 0');
   addColumnIfNotExists('knowledge_sources', 'wait_selector', 'TEXT');
 
+  // Address duration fields (added Jan 2026)
+  addColumnIfNotExists('borrowers', 'address_years', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('borrowers', 'address_months', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('borrowers', 'co_address_years', 'INTEGER DEFAULT 0');
+  addColumnIfNotExists('borrowers', 'co_address_months', 'INTEGER DEFAULT 0');
+
   console.log('Database initialized successfully');
   return database;
 }

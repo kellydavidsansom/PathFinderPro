@@ -599,6 +599,48 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-muted);
 }
 
+/* Time at Address Inputs (years + months) */
+.time-at-address-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.time-at-address-inputs input[type="number"] {
+  width: 60px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.time-at-address-inputs span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Same Address Checkbox */
+.same-address-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.same-address-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.same-address-checkbox span {
+  user-select: none;
+}
+
 /* Data Tables */
 .data-table {
   width: 100%;
