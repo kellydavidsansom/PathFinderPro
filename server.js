@@ -371,10 +371,20 @@ function buildArivePayload(b, calc) {
   }
 
   // Add Zapier-specific fields (not part of Arive API but useful for mapping)
-  payload.zapier_addressDurationMonths = b.address_months || 0;
-  payload.zapier_addressDurationYears = b.address_years || 0;
-  payload.zapier_coAddressDurationMonths = b.co_address_months || 0;
-  payload.zapier_coAddressDurationYears = b.co_address_years || 0;
+  // Address duration (converted to total months for easier mapping)
+  const totalAddressMonths = ((parseInt(b.address_years) || 0) * 12) + (parseInt(b.address_months) || 0);
+  const coTotalAddressMonths = ((parseInt(b.co_address_years) || 0) * 12) + (parseInt(b.co_address_months) || 0);
+
+  payload.zapier_addressDurationMonths = parseInt(b.address_months) || 0;
+  payload.zapier_addressDurationYears = parseInt(b.address_years) || 0;
+  payload.zapier_addressTotalMonths = totalAddressMonths;
+  payload.zapier_coAddressDurationMonths = parseInt(b.co_address_months) || 0;
+  payload.zapier_coAddressDurationYears = parseInt(b.co_address_years) || 0;
+  payload.zapier_coAddressTotalMonths = coTotalAddressMonths;
+
+  // Property county at top level for easy Zapier access
+  payload.zapier_propertyCounty = b.property_county || '';
+  payload.zapier_monthlyRent = b.monthly_rent || 0;
 
   // Remove undefined values
   return JSON.parse(JSON.stringify(payload));
