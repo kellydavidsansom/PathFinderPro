@@ -24,32 +24,54 @@ function apiKeyAuth(req, res, next) {
   next();
 }
 
-// Format borrower data for Zapier/Arive compatibility
-function formatBorrowerForZapier(b, calculations) {
-  // Format date to YYYY-MM-DD
+// Format borrower data for Zapier/Arive - returns Arive-compatible structure
+function formatBorrowerForZapier(b, calc) {
+  // Helper: format date to YYYY-MM-DD
   const formatDate = (date) => {
-    if (!date) return '';
-    // If already in YYYY-MM-DD format, return as is
+    if (!date) return undefined;
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
-    // Try to parse and format
     const d = new Date(date);
-    if (isNaN(d.getTime())) return date;
+    if (isNaN(d.getTime())) return undefined;
     return d.toISOString().split('T')[0];
   };
 
-  // Map military status to Arive format (no spaces, camelCase)
-  const mapMilitaryStatus = (status) => {
-    const map = {
-      'None': null,
-      'Active Duty': 'ActiveDuty',
-      'Veteran': 'Veteran',
-      'Reserve/National Guard': 'ReserveNationalGuardNeverActivated'
-    };
-    return map[status] || null;
+  // Helper: format phone to 10 digits only
+  const formatPhone = (phone) => {
+    if (!phone) return undefined;
+    return phone.replace(/\D/g, '').slice(-10);
   };
 
-  // Map home buying stage to Arive format
-  const mapHomeBuyingStage = (stage) => {
+  // Helper: format SSN to 9 digits only
+  const formatSSN = (ssn) => {
+    if (!ssn) return undefined;
+    return ssn.replace(/\D/g, '');
+  };
+
+  // Map state to 2-letter code
+  const mapState = (state) => {
+    const codes = {
+      'Utah': 'UT', 'Arizona': 'AZ', 'California': 'CA', 'Colorado': 'CO',
+      'Idaho': 'ID', 'Nevada': 'NV', 'Wyoming': 'WY', 'New Mexico': 'NM',
+      'Texas': 'TX', 'Oregon': 'OR', 'Washington': 'WA', 'Montana': 'MT'
+    };
+    if (state && state.length === 2) return state.toUpperCase();
+    return codes[state] || state;
+  };
+
+  // Map property type
+  const mapPropertyType = (type) => {
+    const map = {
+      'Single Family': 'SINGLE_FAMILY_DETACHED',
+      'Condo': 'CONDO_UNDER_5_STORIES',
+      'Townhouse': 'TOWNHOUSE',
+      'Multi-Family (2-4)': 'TWO_UNIT',
+      'Manufactured': 'MANUFACTURED_DOUBLE_WIDE'
+    };
+    return map[type] || undefined;
+  };
+
+  // Map homebuyingStage - MUST be exact Arive enum values
+  const mapStage = (stage) => {
     const map = {
       'Just Getting Started': 'GETTING_STARTED',
       'Making Offers': 'MAKING_OFFERS',
@@ -59,133 +81,156 @@ function formatBorrowerForZapier(b, calculations) {
     return map[stage] || 'GETTING_STARTED';
   };
 
-  // Map years since bankruptcy/foreclosure
-  const mapYearsSince = (value) => {
-    if (!value || value === 'Never') return null;
-    if (value === 'Within 2 years' || value === 'Within 3 years') return 1;
-    if (value === '2+ years ago') return 3;
-    if (value === '3+ years ago') return 4;
-    return null;
+  // Map military status - return undefined for "None"
+  const mapMilitary = (status) => {
+    const map = {
+      'Active Duty': 'ActiveDuty',
+      'Veteran': 'Veteran',
+      'Reserve/National Guard': 'ReserveNationalGuardNeverActivated'
+    };
+    return map[status] || undefined;
   };
 
-  // Map property usage/occupancy to Arive format (no spaces)
-  const mapPropertyUsage = (occupancy) => {
+  // Map occupancy/housing
+  const mapOccupancy = (housing) => {
+    const map = { 'Own': 'Own', 'Rent': 'Rent', 'Living Rent Free': 'LivingRentFree' };
+    return map[housing] || 'Rent';
+  };
+
+  // Map property usage
+  const mapUsage = (occ) => {
     const map = {
       'Primary Residence': 'PrimaryResidence',
       'Second Home': 'SecondHome',
       'Investment': 'Investment'
     };
-    return map[occupancy] || null;
+    return map[occ] || undefined;
   };
 
-  // Map current housing to Arive Occupancy Type format
-  const mapCurrentHousing = (housing) => {
+  // Map years since event - return undefined for "Never"
+  const mapYears = (val) => {
+    if (!val || val === 'Never') return undefined;
+    if (val.includes('2 years') || val.includes('3 years')) return '1';
+    if (val.includes('2+') || val.includes('3+')) return '4';
+    return undefined;
+  };
+
+  // Map employment type
+  const mapEmployment = (type) => {
     const map = {
-      'Own': 'Own',
-      'Rent': 'Rent',
-      'Living Rent Free': 'LivingRentFree'
+      'employed': 'employed',
+      'self-employed': 'self-employed',
+      'retired': 'retired',
+      'active military duty': 'employed'
     };
-    return map[housing] || 'Rent';
+    return map[type] || undefined;
   };
 
-  // Map state name to 2-letter code
-  const mapStateCode = (state) => {
-    const stateCodes = {
-      'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
-      'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
-      'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
-      'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
-      'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
-      'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
-      'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
-      'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
-      'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
-      'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
-      'District of Columbia': 'DC'
-    };
-    // If already a 2-letter code, return as-is
-    if (state && state.length === 2) return state.toUpperCase();
-    return stateCodes[state] || state;
+  // Map mortgage type - only valid Arive values
+  const mapMortgageType = (type) => {
+    const valid = ['Conventional', 'FHA', 'VA', 'USDARuralDevelopment', 'NonQM'];
+    return valid.includes(type) ? type : undefined;
   };
 
-  return {
-    ...b,
-    calculations,
-    // Formatted fields for Arive
-    zapier: {
-      // Boolean conversions
-      first_time_homebuyer: b.first_time_homebuyer ? true : false,
-      has_coborrower: b.has_coborrower ? true : false,
-      currently_owning_home: b.first_time_homebuyer ? false : true,
-      planning_to_sell_home: b.planning_to_sell_home ? true : false,
+  // Build Arive-compatible payload
+  const payload = {
+    // Required fields
+    assigneeEmail: 'hello@clearpathutah.com',
+    loanPurpose: b.loan_purpose || 'Purchase',
 
-      // Date formatting
-      birth_date: formatDate(b.date_of_birth),
-      co_birth_date: formatDate(b.co_date_of_birth),
+    // Lead info
+    leadSource: 'PathFinder Pro',
+    leadStatus: 'QUALIFIED',
+    homebuyingStage: mapStage(b.home_buying_stage),
+    crmReferenceId: String(b.id),
 
-      // Military status (Arive format: ActiveDuty, Veteran, ReserveNationalGuardNeverActivated)
-      military_service_type: mapMilitaryStatus(b.military_status),
-      co_military_service_type: mapMilitaryStatus(b.co_military_status),
+    // Loan details
+    mortgageType: mapMortgageType(b.preferred_loan_type),
+    baseLoanAmount: Math.max(0, calc.loanAmount || 0),
+    purchasePriceOrEstimatedValue: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price,
+    propertyType: mapPropertyType(b.property_type),
+    propertyUsageType: mapUsage(b.occupancy),
 
-      // Home buying stage
-      home_buying_stage: mapHomeBuyingStage(b.home_buying_stage),
+    // Monthly costs (as integers)
+    estimatedHOIMonthly: calc.monthlyInsurance ? Math.round(calc.monthlyInsurance) : undefined,
+    estimatedPropertyTaxesMonthly: calc.monthlyTaxes ? Math.round(calc.monthlyTaxes) : undefined,
+    estimatedAssociationDuesMonthly: calc.monthlyHOA ? Math.round(calc.monthlyHOA) : undefined,
 
-      // Years since events
-      years_since_bankruptcy: mapYearsSince(b.bankruptcy),
-      years_since_foreclosure: mapYearsSince(b.foreclosure),
+    // Credit & rates
+    estimatedFICO: b.credit_score ? String(b.credit_score) : undefined,
+    noteRate: b.interest_rate || undefined,
+    qualifyingRate: b.interest_rate || undefined,
 
-      // Subject property TBD indicator
-      subject_property_tbd: !b.subject_property_street,
+    // Loan structure
+    amortizationType: 'Fixed',
+    term: 360,
+    interestOnly: false,
+    lienPosition: 'FirstLien',
+    impoundWaiver: 'None Waived',
 
-      // Current housing / Occupancy Type (Arive format: Own, Rent, LivingRentFree)
-      occupancy_type: mapCurrentHousing(b.current_housing),
+    // Subject property
+    subjectTBDIndicator: !b.subject_property_street,
+    subjectProperty: {
+      lineText: b.subject_property_street || undefined,
+      city: b.subject_property_city || undefined,
+      county: b.property_county || undefined,
+      postalCode: b.subject_property_zip || undefined,
+      state: mapState(b.property_state)
+    },
 
-      // Property Usage Type (Arive format: PrimaryResidence, SecondHome, Investment)
-      property_usage_type: mapPropertyUsage(b.occupancy),
-
-      // Property value (works for both purchase and refi)
-      property_value: b.loan_purpose === 'Refinance' ? b.property_value : b.purchase_price,
-
-      // Arive-compatible IDs (pass through directly since form now stores Arive IDs)
-      mortgage_type: b.preferred_loan_type || null,  // Conventional, VA, FHA, USDARuralDevelopment, NonQM
-      property_type: b.property_type || null,  // SINGLE_FAMILY_DETACHED, TWO_UNIT, etc.
-      employment_type: b.employment_type || null,  // employed, self-employed, retired, active military duty, unemployed
-      co_employment_type: b.co_employment_type || null,
-
-      // Loan amount (ensure positive)
-      base_loan_amount: Math.max(0, calculations.loanAmount || 0),
-
-      // Monthly rent (only if renting)
-      monthly_rent: mapCurrentHousing(b.current_housing) === 'Rent' ? (b.monthly_rent || 0) : null,
-
-      // State codes (2-letter format)
-      borrower_state: mapStateCode(b.state),
-      property_state: mapStateCode(b.property_state),
-
-      // Lien position (default to FirstLien for most mortgages)
-      lien_position: 'FirstLien',
-
-      // Impound waiver (default to None Waived)
-      impound_waiver: 'None Waived',
-
-      // Loan purpose
-      loan_purpose: b.loan_purpose || 'Purchase',
-
-      // Refinance-specific fields
-      refinance_type: b.refinance_type || null,  // Rate/Term, Cash Out
-      cash_out_purpose: b.cash_out_purpose || null,
-      current_interest_rate: b.current_interest_rate || null,
-
-      // Income/Liability
-      annual_income: calculations.annualIncome || 0,
-      total_monthly_liability: calculations.totalMonthlyDebts || 0,
-
-      // Monthly costs
-      monthly_insurance: calculations.monthlyInsurance || 0,
-      monthly_taxes: calculations.monthlyTaxes || 0,
-      monthly_hoa: calculations.monthlyHOA || 0
+    // Borrower
+    borrower: {
+      firstName: b.first_name,
+      lastName: b.last_name,
+      emailAddressText: b.email,
+      birthDate: formatDate(b.date_of_birth),
+      mobilePhone10digit: formatPhone(b.phone),
+      ssn: formatSSN(b.ssn),
+      militaryServiceType: mapMilitary(b.military_status),
+      employmentType: mapEmployment(b.employment_type),
+      hasRealEstate: !b.first_time_homebuyer,
+      annualIncome: calc.annualIncome || 0,
+      totalLiability: calc.totalMonthlyDebts || 0,
+      firstTimeHomeBuyer: b.first_time_homebuyer ? true : false,
+      yearsSinceForeclosure: mapYears(b.foreclosure),
+      yearsSinceBankruptcy: mapYears(b.bankruptcy),
+      currentlyOwningAHome: !b.first_time_homebuyer,
+      planningToSellItBeforeBuying: b.planning_to_sell_home ? true : false,
+      noContactRequest: false,
+      emailOptOut: false,
+      smsOptOut: false,
+      occupancy: mapOccupancy(b.current_housing),
+      monthlyRentAmt: b.current_housing === 'Rent' && b.monthly_rent ? String(b.monthly_rent) : undefined,
+      hasCoBorrower: b.has_coborrower ? true : false,
+      currentResidence: (b.street_address || b.city) ? {
+        addressCountry: 'US',
+        lineText: b.street_address || undefined,
+        city: b.city || undefined,
+        state: mapState(b.state),
+        postalCode: b.zip || undefined
+      } : undefined
     }
   };
+
+  // Add co-borrower if present
+  if (b.has_coborrower && b.co_first_name && b.co_last_name) {
+    payload.coBorrower = {
+      firstName: b.co_first_name,
+      lastName: b.co_last_name,
+      emailAddressText: b.co_email || undefined,
+      birthDate: formatDate(b.co_date_of_birth),
+      cellPhone: formatPhone(b.co_phone),
+      ssn: formatSSN(b.co_ssn),
+      militaryServiceType: mapMilitary(b.co_military_status)
+    };
+  }
+
+  // Add extra fields for Zapier mapping convenience
+  payload.borrower_durationYearsCount = parseInt(b.address_years) || 0;
+  payload.borrower_durationMonthsCount = parseInt(b.address_months) || 0;
+
+  // Remove undefined values
+  return JSON.parse(JSON.stringify(payload));
 }
 
 // Get all borrowers ready for export (for Zapier polling trigger)
