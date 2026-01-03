@@ -151,10 +151,10 @@ function formatBorrowerForZapier(b, calc) {
     propertyType: mapPropertyType(b.property_type),
     propertyUsageType: mapUsage(b.occupancy),
 
-    // Monthly costs (as integers)
-    estimatedHOIMonthly: calc.monthlyInsurance ? Math.round(calc.monthlyInsurance) : undefined,
-    estimatedPropertyTaxesMonthly: calc.monthlyTaxes ? Math.round(calc.monthlyTaxes) : undefined,
-    estimatedAssociationDuesMonthly: calc.monthlyHOA ? Math.round(calc.monthlyHOA) : undefined,
+    // Monthly costs (as integers, always include even if 0)
+    estimatedHOIMonthly: Math.round(calc.monthlyInsurance || 0),
+    estimatedPropertyTaxesMonthly: Math.round(calc.monthlyTaxes || 0),
+    estimatedAssociationDuesMonthly: Math.round(calc.monthlyHOA || 0),
 
     // Credit & rates
     estimatedFICO: b.credit_score ? String(b.credit_score) : undefined,
