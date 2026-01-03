@@ -58,16 +58,16 @@ function formatBorrowerForZapier(b, calc) {
     return codes[state] || state;
   };
 
-  // Map property type
+  // Map property type to Arive values: SingleFamily, Condominium, Cooperative, ManufacturedHome, PUD, TownHouse, VACANT_LOT_LAND
   const mapPropertyType = (type) => {
     const map = {
-      'Single Family': 'SINGLE_FAMILY_DETACHED',
-      'Condo': 'CONDO_UNDER_5_STORIES',
-      'Townhouse': 'TOWNHOUSE',
-      'Multi-Family (2-4)': 'TWO_UNIT',
-      'Manufactured': 'MANUFACTURED_DOUBLE_WIDE'
+      'Single Family': 'SingleFamily',
+      'Condo': 'Condominium',
+      'Townhouse': 'TownHouse',
+      'Multi-Family (2-4)': 'PUD',
+      'Manufactured': 'ManufacturedHome'
     };
-    return map[type] || undefined;
+    return map[type] || null;
   };
 
   // Map homebuyingStage - MUST be exact Arive enum values
