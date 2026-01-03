@@ -180,48 +180,48 @@ function formatBorrowerForZapier(b, calc) {
 
     // Borrower
     borrower: {
-      firstName: b.first_name,
-      lastName: b.last_name,
-      emailAddressText: b.email,
-      birthDate: formatDate(b.date_of_birth),
-      mobilePhone10digit: formatPhone(b.phone),
-      ssn: formatSSN(b.ssn),
-      militaryServiceType: mapMilitary(b.military_status),
-      employmentType: mapEmployment(b.employment_type),
+      firstName: b.first_name || '',
+      lastName: b.last_name || '',
+      emailAddressText: b.email || '',
+      birthDate: formatDate(b.date_of_birth) || '',
+      mobilePhone10digit: formatPhone(b.phone) || '',
+      ssn: formatSSN(b.ssn) || '',
+      militaryServiceType: mapMilitary(b.military_status) || null,
+      employmentType: mapEmployment(b.employment_type) || null,
       hasRealEstate: !b.first_time_homebuyer,
       annualIncome: calc.annualIncome || 0,
       totalLiability: calc.totalMonthlyDebts || 0,
       firstTimeHomeBuyer: b.first_time_homebuyer ? true : false,
-      yearsSinceForeclosure: mapYears(b.foreclosure),
-      yearsSinceBankruptcy: mapYears(b.bankruptcy),
+      yearsSinceForeclosure: mapYears(b.foreclosure) || null,
+      yearsSinceBankruptcy: mapYears(b.bankruptcy) || null,
       currentlyOwningAHome: !b.first_time_homebuyer,
       planningToSellItBeforeBuying: b.planning_to_sell_home ? true : false,
       noContactRequest: false,
       emailOptOut: false,
       smsOptOut: false,
       occupancy: mapOccupancy(b.current_housing),
-      monthlyRentAmt: b.current_housing === 'Rent' && b.monthly_rent ? String(b.monthly_rent) : undefined,
+      monthlyRentAmt: b.monthly_rent ? String(b.monthly_rent) : '',
       hasCoBorrower: b.has_coborrower ? true : false,
-      currentResidence: (b.street_address || b.city) ? {
+      currentResidence: {
         addressCountry: 'US',
-        lineText: b.street_address || undefined,
-        city: b.city || undefined,
-        state: mapState(b.state),
-        postalCode: b.zip || undefined
-      } : undefined
+        lineText: b.street_address || '',
+        city: b.city || '',
+        state: mapState(b.state) || '',
+        postalCode: b.zip || ''
+      }
     }
   };
 
   // Add co-borrower if present
   if (b.has_coborrower && b.co_first_name && b.co_last_name) {
     payload.coBorrower = {
-      firstName: b.co_first_name,
-      lastName: b.co_last_name,
-      emailAddressText: b.co_email || undefined,
-      birthDate: formatDate(b.co_date_of_birth),
-      cellPhone: formatPhone(b.co_phone),
-      ssn: formatSSN(b.co_ssn),
-      militaryServiceType: mapMilitary(b.co_military_status)
+      firstName: b.co_first_name || '',
+      lastName: b.co_last_name || '',
+      emailAddressText: b.co_email || '',
+      birthDate: formatDate(b.co_date_of_birth) || '',
+      cellPhone: formatPhone(b.co_phone) || '',
+      ssn: formatSSN(b.co_ssn) || '',
+      militaryServiceType: mapMilitary(b.co_military_status) || null
     };
   }
 
