@@ -305,10 +305,9 @@ router.delete('/zapier/webhooks/:id', apiKeyAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// Internal endpoint for "Send to Arive" button (no API key required)
+// Internal endpoint for "Send to Arive" button - sends via Zapier webhooks
 router.post('/borrower/:id/send-to-arive', async (req, res) => {
   const database = db.getDb();
-  const ariveService = require('../services/arive');
 
   // Get borrower data
   const borrower = database.prepare('SELECT * FROM borrowers WHERE id = ?').get(req.params.id);
@@ -328,42 +327,28 @@ router.post('/borrower/:id/send-to-arive', async (req, res) => {
   const calculations = calculateBorrowerMetrics(borrower);
 
   try {
-    // Send directly to Arive API
-    const ariveResponse = await ariveService.createLead(borrower, calculations);
-
-    // Update status to exported
-    database.prepare(`
-      UPDATE borrowers
-      SET status = 'exported', updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(req.params.id);
-
-    console.log('Lead sent to Arive:', ariveResponse);
-
-    res.json({
-      success: true,
-      message: 'Lead sent to Arive successfully',
-      ariveLeadId: ariveResponse.ariveLeadId,
-      deepLinkURL: ariveResponse.deepLinkURL
-    });
-
-  } catch (error) {
-    console.error('Arive API Error:', error.message);
-
-    // Fall back to marking as qualified (for Zapier polling)
+    // Update status to qualified
     database.prepare(`
       UPDATE borrowers
       SET status = 'qualified', updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(req.params.id);
 
-    // Trigger webhooks as fallback
+    // Send to Zapier via webhooks
     await triggerWebhooks('borrower.qualified', { borrower, calculations });
+
+    console.log('Lead sent to Zapier webhooks for borrower:', req.params.id);
 
     res.json({
       success: true,
-      message: 'Marked as qualified (Arive direct send failed: ' + error.message + ')',
-      fallback: true
+      message: 'Lead sent to Zapier successfully'
+    });
+
+  } catch (error) {
+    console.error('Webhook Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send to Zapier: ' + error.message
     });
   }
 });
